@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "manga_sources": [
+    {
+      "id": "asurascans",
+      "name": "Asura Scans",
+      "url": "https://asura.nacm.me",
+      "templateId": "mangastream",
+      "icon": "https://asura.nacm.me/favicon.ico",
+      "nsfw": false,
+      "language": "en"
+    },
+    {
+      "id": "reaperscans",
+      "name": "Reaper Scans",
+      "url": "https://reaperscans.com",
+      "templateId": "madara",
+      "icon": "https://reaperscans.com/favicon.ico",
+      "nsfw": false,
+      "language": "en"
+    },
+    {
+      "id": "manhuaplus",
+      "name": "Manhua Plus",
+      "url": "https://manhuaplus.com",
+      "templateId": "madara",
+      "icon": "https://manhuaplus.com/favicon.ico",
+      "nsfw": false,
+      "language": "en"
+    }
+  ]
+}

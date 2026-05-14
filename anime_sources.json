@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "anime_sources": [
+    {
+      "id": "gogoanime",
+      "name": "GogoAnime",
+      "url": "https://gogoanime.hu",
+      "templateId": "gogoanime",
+      "icon": "https://gogoanime.hu/favicon.ico",
+      "nsfw": false,
+      "language": "en"
+    },
+    {
+      "id": "animepahe",
+      "name": "AnimePahe",
+      "url": "https://animepahe.ru",
+      "templateId": "animepahe",
+      "icon": "https://animepahe.ru/favicon.ico",
+      "nsfw": false,
+      "language": "en"
+    }
+  ]
+}
