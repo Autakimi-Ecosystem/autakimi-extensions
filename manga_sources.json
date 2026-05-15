@@ -27,6 +27,15 @@
       "icon": "https://manhuaplus.com/favicon.ico",
       "nsfw": false,
       "language": "en"
+    },
+    {
+      "id": "ma.autakimi.extension.ar.mangasid",
+      "name": "MangaSid",
+      "url": "https://mangasid.com",
+      "templateId": "native",
+      "icon": "autakimi-cache://local-icon/ma.autakimi.extension.ar.mangasid.png",
+      "nsfw": false,
+      "language": "ar"
     }
   ]
 }
