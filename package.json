@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "AutaKimi Community Extensions and Plugins",
   "scripts": {
-    "build": "tsx build.ts"
+    "build": "tsx build.ts",
+    "release": "node scripts/release.mjs"
   },
   "devDependencies": {
     "tsx": "^4.7.1",

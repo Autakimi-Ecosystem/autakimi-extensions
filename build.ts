@@ -10,11 +10,16 @@ function buildTemplates() {
   console.log('Building templates...')
   const templatesFile = path.join(EXTENSIONS_DIR, 'templates.json')
   
+  // Read version dynamically from package.json
+  const pkgPath = path.join(EXTENSIONS_DIR, 'package.json')
+  const pkgVersion = JSON.parse(fs.readFileSync(pkgPath, 'utf8')).version || '1.0.0'
+  
   // Read existing templates.json to keep version and metadata intact
-  let existingData: { version: string; templates: any[] } = { version: '1.0.0', templates: [] }
+  let existingData: { version: string; templates: any[] } = { version: pkgVersion, templates: [] }
   if (fs.existsSync(templatesFile)) {
     try {
       existingData = JSON.parse(fs.readFileSync(templatesFile, 'utf8'))
+      existingData.version = pkgVersion
     } catch (e) {
       console.warn('Failed to parse existing templates.json, creating new.')
     }
@@ -62,11 +67,16 @@ function buildPlugins() {
   console.log('Building plugins...')
   const pluginsFile = path.join(EXTENSIONS_DIR, 'plugins.json')
 
+  // Read version dynamically from package.json
+  const pkgPath = path.join(EXTENSIONS_DIR, 'package.json')
+  const pkgVersion = JSON.parse(fs.readFileSync(pkgPath, 'utf8')).version || '1.0.0'
+
   // Read existing plugins.json to keep metadata intact
-  let existingData: { version: string; plugins: any[] } = { version: '1.0.0', plugins: [] }
+  let existingData: { version: string; plugins: any[] } = { version: pkgVersion, plugins: [] }
   if (fs.existsSync(pluginsFile)) {
     try {
       existingData = JSON.parse(fs.readFileSync(pluginsFile, 'utf8'))
+      existingData.version = pkgVersion
     } catch (e) {
       console.warn('Failed to parse existing plugins.json, creating new.')
     }
