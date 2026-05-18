@@ -64,11 +64,51 @@ Sources define specific websites and link them to a scraping engine (template).
 ---
 
 ## 🛠️ Contributing
-1. **Fork** this repository.
-2. **Add/Update** templates, plugins, or sources.
-3. Ensure all JavaScript logic is properly stringified for JSON compatibility.
-4. **Icons**: Place icons in the `icons/` folder named as `{package_id}.png`.
-5. **Submit a Pull Request**.
+
+We've introduced a **TypeScript Build Pipeline** to make extending AutaKimi much easier! You no longer need to write escaped JavaScript logic directly inside JSON strings. Instead, you can author clean, fully syntax-highlighted, and auto-completed TypeScript.
+
+### Workflow & Directory Structure
+
+1. **Templates**:
+   - Write/edit templates inside the [`src/templates/`](file:///D:/DEV/Apps/AutaKimi/autakimi-extensions/src/templates) folder (e.g., `src/templates/madara.ts`).
+   - The file should export a default function returning the code string:
+     ```typescript
+     export default function(baseUrl: string, ua: string) {
+       return `const baseUrl = ${JSON.stringify(baseUrl)}; ...`;
+     }
+     ```
+2. **Plugins**:
+   - Write/edit sandboxed Electron plugins inside the [`src/plugins/`](file:///D:/DEV/Apps/AutaKimi/autakimi-extensions/src/plugins) folder (e.g., `src/plugins/auto-solve-cf.ts`).
+   - The file should export a default async executor function:
+     ```typescript
+     export default async function(context: any) {
+       // Code runs sandboxed in VM context
+       return () => { /* optional disposer */ };
+     }
+     ```
+
+### Local Development & Building
+
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+2. **Build Distribution JSONs**:
+   ```bash
+   npm run build
+   ```
+   This compiles your TS files statically and updates `templates.json` and `plugins.json` at the root automatically.
+
+### Automated Distribution (GitHub Actions)
+
+You **do not need to commit the generated JSON files manually**! 
+1. Just commit your `src/` TS files and submit a **Pull Request**.
+2. Our **GitHub Actions CI** will validate your PR by building the files.
+3. Upon merging into the main branch, the GitHub Action automatically re-compiles the files and commits `templates.json` and `plugins.json` back to the repository.
+
+### Additional Guidelines
+
+- **Icons**: Place icons in the `icons/` folder named as `{package_id}.png`.
 
 ## 🛡️ Legal Notice & Neutrality
 **AutaKimi** is a neutral media viewer framework. This repository is community-maintained and is intentionally decoupled from the core application source code. It does not host, provide, or link to any copyrighted media content.
