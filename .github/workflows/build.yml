@@ -1,0 +1,63 @@
+name: Build and Distribute Extensions
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Auto-Commit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Fetch all history so git commit works correctly
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Run Build Pipeline
+        run: npm run build
+
+      - name: Commit and Push Changes
+        if: github.event_name == 'push'
+        run: |
+          # Configure Git credentials
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Check if there are any changes in templates.json or plugins.json
+          git add templates.json plugins.json
+          
+          if ! git diff --cached --quiet; then
+            echo "Changes detected in compiled distribution files. Committing..."
+            git commit -m "chore(dist): auto-compile templates and plugins [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "No changes detected in compiled distribution files."
+          fi

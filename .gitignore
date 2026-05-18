@@ -12,3 +12,6 @@ Desktop.ini
 *.tmp
 *.bak
 *~
+
+# Node.js
+node_modules/
