@@ -34,7 +34,7 @@ export class RistoAnimeSource extends AnimeSource {
   }
 
   async fetchLatest(page: number): Promise<MangaPage> {
-    const url = page === 1 ? this.baseUrl : `${this.baseUrl}/?offset=${page}`
+    const url = page === 1 ? this.baseUrl : `${this.baseUrl}/?page=${page}`
     return this._parseAnimeList(url)
   }
 
@@ -43,7 +43,7 @@ export class RistoAnimeSource extends AnimeSource {
     const url =
       page === 1
         ? `${this.baseUrl}/?s=${encodeURIComponent(query)}`
-        : `${this.baseUrl}/?s=${encodeURIComponent(query)}&offset=${page}`
+        : `${this.baseUrl}/?s=${encodeURIComponent(query)}&page=${page}`
     return this._parseAnimeList(url)
   }
 
