@@ -1,10 +1,13 @@
 import * as fs from 'fs'
 import * as path from 'path'
+import * as esbuild from 'esbuild'
 
 const EXTENSIONS_DIR = __dirname
 const SRC_DIR = path.join(EXTENSIONS_DIR, 'src')
 const TEMPLATES_SRC_DIR = path.join(SRC_DIR, 'templates')
 const PLUGINS_SRC_DIR = path.join(SRC_DIR, 'plugins')
+const NATIVE_SRC_DIR = path.join(SRC_DIR, 'native')
+const JS_OUT_DIR = path.join(EXTENSIONS_DIR, 'js')
 
 function buildTemplates() {
   console.log('Building templates...')
@@ -124,11 +127,86 @@ function buildPlugins() {
   console.log(`Successfully wrote plugins.json with ${builtPlugins.length} plugins.`)
 }
 
-try {
-  buildTemplates()
-  buildPlugins()
-  console.log('Build pipeline completed successfully.')
-} catch (e: any) {
-  console.error('Build execution failed:', e.message)
-  process.exit(1)
+async function buildNative() {
+  console.log('Building native extensions...')
+  if (!fs.existsSync(JS_OUT_DIR)) {
+    fs.mkdirSync(JS_OUT_DIR, { recursive: true })
+  }
+
+  const nativeFiles = fs.readdirSync(NATIVE_SRC_DIR)
+    .filter(f => f.endsWith('.ts') || f.endsWith('.js'))
+
+  const dispatcherCode = `
+import { executeExtension } from '../base/sandboxDispatcher';
+`
+
+  for (const file of nativeFiles) {
+    const filePath = path.join(NATIVE_SRC_DIR, file)
+    const id = path.parse(file).name
+    const outPath = path.join(JS_OUT_DIR, `${id}.js`)
+
+    // Extract the class name exported by the file
+    const fileContent = fs.readFileSync(filePath, 'utf8')
+    const classMatch = fileContent.match(/export\s+class\s+([A-Za-z0-9_]+)/)
+    if (!classMatch) {
+      console.error(`[Error] Native extension ${id} does not export a class. skipping.`)
+      continue
+    }
+    const className = classMatch[1]
+
+    // Create a temporary entry point that wraps the extension
+    const tmpEntryPath = path.join(NATIVE_SRC_DIR, `_${id}_entry.ts`)
+    const entryCode = `
+import { ${className} } from './${file}';
+import { executeExtension } from '../base/sandboxDispatcher';
+
+declare const params: any;
+
+const source = new ${className}();
+export default executeExtension(source, params);
+`
+    fs.writeFileSync(tmpEntryPath, entryCode, 'utf8')
+
+    try {
+      await esbuild.build({
+        entryPoints: [tmpEntryPath],
+        bundle: true,
+        outfile: outPath,
+        format: 'iife',
+        globalName: 'extension_module',
+        target: 'es2020',
+        platform: 'browser',
+        external: ['cheerio'],
+        minify: true,
+      })
+
+      // Read the generated file and append the return statement
+      const bundledCode = fs.readFileSync(outPath, 'utf8')
+      fs.writeFileSync(outPath, bundledCode + '\nreturn extension_module.default;\n', 'utf8')
+      
+      console.log(`  - Built native extension: ${id}`)
+    } catch (e: any) {
+      console.error(`  - Failed to build native extension: ${id}`, e.message)
+    } finally {
+      if (fs.existsSync(tmpEntryPath)) fs.unlinkSync(tmpEntryPath)
+    }
+  }
+
+  // Let's fix the esbuild approach:
+  // Since SandboxRunner expects the script to literally \`return Promise.resolve(...)\`,
+  // we can bundle with format 'iife', globalName 'sandbox_module', and append \`return sandbox_module.default;\`
 }
+
+async function run() {
+  try {
+    buildTemplates()
+    buildPlugins()
+    await buildNative()
+    console.log('Build pipeline completed successfully.')
+  } catch (e: any) {
+    console.error('Build execution failed:', e.message)
+    process.exit(1)
+  }
+}
+
+run()

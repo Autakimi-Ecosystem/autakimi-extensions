@@ -79,13 +79,12 @@ We've introduced a **TypeScript Build Pipeline** to make extending AutaKimi much
      ```
 2. **Plugins**:
    - Write/edit sandboxed Electron plugins inside the [`src/plugins/`](file:///D:/DEV/Apps/AutaKimi/autakimi-extensions/src/plugins) folder (e.g., `src/plugins/auto-solve-cf.ts`).
-   - The file should export a default async executor function:
-     ```typescript
-     export default async function(context: any) {
-       // Code runs sandboxed in VM context
-       return () => { /* optional disposer */ };
-     }
-     ```
+   - The file should export a default async executor function.
+
+3. **Native Extensions (Isolated Custom Logic)**:
+   - For sources that require completely custom parsing logic that doesn't fit into a template, write them as TypeScript classes in [`src/native/`](file:///D:/DEV/Apps/AutaKimi/autakimi-extensions/src/native).
+   - Ensure your class implements `ISourceAdapter` and extends sandbox-compatible bases (like `MadaraSource` from `src/base/`).
+   - The build pipeline will bundle these into standalone, isolated JavaScript payloads in the `js/` directory to run safely inside the App's Sandbox VM.
 
 ### Local Development & Building
 
@@ -93,11 +92,17 @@ We've introduced a **TypeScript Build Pipeline** to make extending AutaKimi much
    ```bash
    npm install
    ```
-2. **Build Distribution JSONs**:
+2. **Update Metadata**:
+   - If adding a new source, update `manga_sources.json` or the relevant catalog (e.g., `MangaCatalogs/Arabic.json`). Make sure to use `"templateId": "native"` if it's a native extension.
+3. **Build the Extensions**:
+   - On Windows, simply double-click the `build.bat` file, OR run:
    ```bash
-   npm run build
+   npx tsx build.ts
    ```
-   This compiles your TS files statically and updates `templates.json` and `plugins.json` at the root automatically.
+   - This compiles your TS files statically, bundles native extensions into the `js/` directory, and updates `templates.json` and `plugins.json` automatically.
+4. **Test in AutaKimi**:
+   - Launch the AutaKimi Desktop App in development mode (`npm run dev:desktop`).
+   - The app's `localFileInterceptor` will automatically intercept fetches to the remote GitHub repository and serve your newly built local files (including the `js/*.js` bundles) directly from your disk!
 
 ### Automated Distribution (GitHub Actions)
 
