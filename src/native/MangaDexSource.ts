@@ -1,4 +1,3 @@
-import { DataService } from '@renderer/shared/api'
 import { ISourceAdapter, Manga, Chapter, MangaPage, SourceFilterGroup } from '../types'
 
 export class MangaDexSource implements ISourceAdapter {
@@ -111,7 +110,8 @@ export class MangaDexSource implements ISourceAdapter {
 
     url = this.applyFiltersToUrl(url, extraArgs)
 
-    const res: any = await DataService.fetchRepo(url)
+    const resRes = await fetch(url)
+    const res: any = await resRes.json()
 
     const manga: Manga[] = (res.data || []).map((m: any) => {
       const coverRel = m.relationships?.find((r: any) => r.type === 'cover_art')
@@ -138,7 +138,8 @@ export class MangaDexSource implements ISourceAdapter {
 
     url = this.applyFiltersToUrl(url, extraArgs)
 
-    const res: any = await DataService.fetchRepo(url)
+    const resRes = await fetch(url)
+    const res: any = await resRes.json()
 
     const manga: Manga[] = (res.data || []).map((m: any) => {
       const coverRel = m.relationships?.find((r: any) => r.type === 'cover_art')
@@ -165,7 +166,8 @@ export class MangaDexSource implements ISourceAdapter {
 
     url = this.applyFiltersToUrl(url, extraArgs)
 
-    const res: any = await DataService.fetchRepo(url)
+    const resRes = await fetch(url)
+    const res: any = await resRes.json()
 
     const manga: Manga[] = (res.data || []).map((m: any) => {
       const coverRel = m.relationships?.find((r: any) => r.type === 'cover_art')
@@ -186,9 +188,8 @@ export class MangaDexSource implements ISourceAdapter {
   }
 
   async fetchMangaDetails(manga: Manga): Promise<Manga> {
-    const res: any = await DataService.fetchRepo(
-      `${this.baseUrl}/manga/${manga.id}?includes[]=cover_art`
-    )
+    const resRes = await fetch(`${this.baseUrl}/manga/${manga.id}?includes[]=cover_art`)
+    const res: any = await resRes.json()
     const m = res.data
     if (!m) return manga
 
@@ -207,9 +208,8 @@ export class MangaDexSource implements ISourceAdapter {
 
   async fetchChapters(mangaId: string): Promise<Chapter[]> {
     // Note: mangaId here is expected to be a UUID for MangaDex
-    const res: any = await DataService.fetchRepo(
-      `${this.baseUrl}/manga/${mangaId}/feed?limit=500&translatedLanguage[]=en&order[chapter]=desc`
-    )
+    const resRes = await fetch(`${this.baseUrl}/manga/${mangaId}/feed?limit=500&translatedLanguage[]=en&order[chapter]=desc`)
+    const res: any = await resRes.json()
     if (!res || !res.data) return []
 
     return res.data.map((c: any) => ({
@@ -222,7 +222,8 @@ export class MangaDexSource implements ISourceAdapter {
   }
 
   async fetchPages(chapterId: string): Promise<string[]> {
-    const res: any = await DataService.fetchRepo(`${this.baseUrl}/at-home/server/${chapterId}`)
+    const resRes = await fetch(`${this.baseUrl}/at-home/server/${chapterId}`)
+    const res: any = await resRes.json()
     if (!res || !res.chapter) return []
 
     const host = res.baseUrl

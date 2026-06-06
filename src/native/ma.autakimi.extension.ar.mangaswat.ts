@@ -1,4 +1,3 @@
-import { DataService } from '@renderer/shared/api'
 import { ISourceAdapter, Manga, Chapter, MangaPage } from '../types'
 
 export class MangaSwat implements ISourceAdapter {
@@ -28,14 +27,15 @@ export class MangaSwat implements ISourceAdapter {
       Referer: `${this.baseUrl}/`
     }
 
-    const res: any = await DataService.fetchText(url, { headers })
-    if (!res || !res.ok) {
-      console.warn(`[MangaSwat] API Error: ${res?.status} for ${url}`)
+    const resRes = await fetch(url, { headers })
+    if (!resRes.ok) {
+      console.warn(`[MangaSwat] API Error: ${resRes.status} for ${url}`)
       return null
     }
+    const resText = await resRes.text()
 
     try {
-      return JSON.parse(res.data)
+      return JSON.parse(resText)
     } catch (e) {
       console.error(`[MangaSwat] Failed to parse JSON for ${url}`, e)
       return null
