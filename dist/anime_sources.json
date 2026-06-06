@@ -1,0 +1,21 @@
+{
+  "version": "1.0.4",
+  "anime_sources": [
+    {
+      "id": "ma.autakimi.extension.ar.ristoanime",
+      "name": "RistoAnime",
+      "url": "https://ristoanime.com",
+      "icon": "autakimi-cache://local-icon/ma.autakimi.extension.ar.ristoanime.png",
+      "nsfw": false,
+      "language": "ar"
+    },
+    {
+      "id": "ma.autakimi.extension.ar.shahiidanime",
+      "name": "ShahiidAnime",
+      "url": "https://shahiidanime.com",
+      "icon": "autakimi-cache://local-icon/ma.autakimi.extension.ar.shahiidanime.png",
+      "nsfw": false,
+      "language": "ar"
+    }
+  ]
+}

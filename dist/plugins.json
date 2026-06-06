@@ -1,0 +1,14 @@
+{
+  "version": "1.0.4",
+  "plugins": [
+    {
+      "id": "auto-solve-cf",
+      "name": "Auto Solve Cloudflare",
+      "description": "Automatically attempts to solve Cloudflare Turnstile challenges by simulating user mouse clicks on the verification widget.",
+      "author": "AutaKimi Community",
+      "version": "1.0.0",
+      "target": "main-cloudflare",
+      "code": "return async (context) => {\nconst win = context.win;\r\n  if (!win) return;\r\n  \r\n  let attempts = 0;\r\n  const interval = setInterval(async () => {\r\n    if (win.isDestroyed() || attempts > 30) {\r\n      clearInterval(interval);\r\n      return;\r\n    }\r\n    attempts++;\r\n    try {\r\n      const rect = await win.webContents.executeJavaScript(`\r\n        (function() {\r\n          const iframe = document.querySelector('iframe');\r\n          if (iframe && iframe.src.includes('challenges.cloudflare.com')) {\r\n             const rect = iframe.getBoundingClientRect();\r\n             if (rect.width > 0 && rect.height > 0) {\r\n               return { x: Math.round(rect.x + rect.width / 4), y: Math.round(rect.y + rect.height / 2) };\r\n             }\r\n          }\r\n          return null;\r\n        })()\r\n      `);\r\n      if (rect) {\r\n         console.log('[Plugin: AutoSolve] Found Turnstile, clicking at', rect);\r\n         // Stop after a successful find to prevent spamming while the page navigates\r\n         clearInterval(interval);\r\n         \r\n         win.webContents.sendInputEvent({ type: 'mouseMove', x: rect.x, y: rect.y });\r\n         setTimeout(() => {\r\n           if (!win.isDestroyed()) {\r\n             win.webContents.sendInputEvent({ type: 'mouseDown', x: rect.x, y: rect.y, button: 'left', clickCount: 1 });\r\n             win.webContents.sendInputEvent({ type: 'mouseUp', x: rect.x, y: rect.y, button: 'left', clickCount: 1 });\r\n           }\r\n         }, 150);\r\n      }\r\n    } catch (e) { }\r\n  }, 2000);\r\n  \r\n  // Return disposer to host\r\n  return () => clearInterval(interval);\n}"
+    }
+  ]
+}

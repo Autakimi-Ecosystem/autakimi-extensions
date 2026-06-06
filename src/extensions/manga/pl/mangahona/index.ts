@@ -1,0 +1,15 @@
+export const config = {
+  "name": "MangaHoNa",
+  "pkg": "ma.autakimi.extension.pl.mangahona",
+  "lang": "pl",
+  "version": "0.0.1",
+  "nsfw": 0,
+  "sources": [
+    {
+      "name": "MangaHoNa",
+      "lang": "pl",
+      "id": "8922529241027133892",
+      "baseUrl": "https://mangahona.pl"
+    }
+  ]
+};

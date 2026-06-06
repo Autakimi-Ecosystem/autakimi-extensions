@@ -1,0 +1,10 @@
+[
+  {
+    "name": "MangaDex",
+    "pkg": "MangaDexSource",
+    "lang": "all",
+    "version": "0.0.1",
+    "baseClass": "Native",
+    "sources": []
+  }
+]

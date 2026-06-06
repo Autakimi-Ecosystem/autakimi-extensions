@@ -1,0 +1,32 @@
+[
+  {
+    "name": "RistoAnime",
+    "pkg": "ma.autakimi.extension.ar.ristoanime",
+    "lang": "ar",
+    "type": "anime",
+    "version": "0.0.1",
+    "baseClass": "Native",
+    "sources": [
+      {
+        "name": "RistoAnime",
+        "id": "12345",
+        "baseUrl": "https://ristoanime.com"
+      }
+    ]
+  },
+  {
+    "name": "ShahiidAnime",
+    "pkg": "ma.autakimi.extension.ar.shahiidanime",
+    "lang": "ar",
+    "type": "anime",
+    "version": "0.0.1",
+    "baseClass": "Native",
+    "sources": [
+      {
+        "name": "Shahiid Anime",
+        "id": "67890",
+        "baseUrl": "https://shahiidanime.com"
+      }
+    ]
+  }
+]
