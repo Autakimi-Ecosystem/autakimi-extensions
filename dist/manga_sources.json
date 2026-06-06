@@ -1,0 +1,13 @@
+{
+  "version": "1.0.4",
+  "manga_sources": [
+    {
+      "id": "MangaDexSource",
+      "name": "MangaDex",
+      "url": "",
+      "icon": "autakimi-cache://local-icon/MangaDexSource.png",
+      "nsfw": false,
+      "language": "all"
+    }
+  ]
+}

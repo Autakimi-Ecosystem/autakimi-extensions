@@ -51,12 +51,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          # Check if there are any changes in templates.json or plugins.json
-          git add templates.json plugins.json
+          # Check if there are any changes in generated files
+          git add templates.json plugins.json dist/
           
           if ! git diff --cached --quiet; then
             echo "Changes detected in compiled distribution files. Committing..."
-            git commit -m "chore(dist): auto-compile templates and plugins [skip ci]"
+            git commit -m "chore(dist): auto-compile extensions to dist folder [skip ci]"
             git push origin HEAD:${{ github.ref_name }}
           else
             echo "No changes detected in compiled distribution files."

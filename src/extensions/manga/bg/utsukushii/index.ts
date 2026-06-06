@@ -1,0 +1,15 @@
+export const config = {
+  "name": "Utsukushii",
+  "pkg": "ma.autakimi.extension.bg.utsukushii",
+  "lang": "bg",
+  "version": "0.0.1",
+  "nsfw": 0,
+  "sources": [
+    {
+      "name": "Utsukushii",
+      "lang": "bg",
+      "id": "4406556873729219957",
+      "baseUrl": "https://utsukushii-bg.com"
+    }
+  ]
+};

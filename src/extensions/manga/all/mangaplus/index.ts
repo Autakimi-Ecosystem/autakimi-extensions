@@ -1,0 +1,63 @@
+export const config = {
+  "name": "MANGA Plus by SHUEISHA",
+  "pkg": "ma.autakimi.extension.all.mangaplus",
+  "lang": "all",
+  "version": "0.0.1",
+  "nsfw": 0,
+  "sources": [
+    {
+      "name": "MANGA Plus by SHUEISHA",
+      "lang": "en",
+      "id": "1998944621602463790",
+      "baseUrl": "https://mangaplus.shueisha.co.jp"
+    },
+    {
+      "name": "MANGA Plus by SHUEISHA",
+      "lang": "es",
+      "id": "1286073245950890830",
+      "baseUrl": "https://mangaplus.shueisha.co.jp"
+    },
+    {
+      "name": "MANGA Plus by SHUEISHA",
+      "lang": "fr",
+      "id": "7642759409549978864",
+      "baseUrl": "https://mangaplus.shueisha.co.jp"
+    },
+    {
+      "name": "MANGA Plus by SHUEISHA",
+      "lang": "id",
+      "id": "932564577108614127",
+      "baseUrl": "https://mangaplus.shueisha.co.jp"
+    },
+    {
+      "name": "MANGA Plus by SHUEISHA",
+      "lang": "pt-BR",
+      "id": "3444662672352788181",
+      "baseUrl": "https://mangaplus.shueisha.co.jp"
+    },
+    {
+      "name": "MANGA Plus by SHUEISHA",
+      "lang": "ru",
+      "id": "3520485566708512181",
+      "baseUrl": "https://mangaplus.shueisha.co.jp"
+    },
+    {
+      "name": "MANGA Plus by SHUEISHA",
+      "lang": "th",
+      "id": "6345211913721743017",
+      "baseUrl": "https://mangaplus.shueisha.co.jp"
+    },
+    {
+      "name": "MANGA Plus by SHUEISHA",
+      "lang": "vi",
+      "id": "4696259977267090434",
+      "baseUrl": "https://mangaplus.shueisha.co.jp"
+    },
+    {
+      "name": "MANGA Plus by SHUEISHA",
+      "lang": "de",
+      "id": "1893513843840146580",
+      "baseUrl": "https://mangaplus.shueisha.co.jp"
+    }
+  ]
+};

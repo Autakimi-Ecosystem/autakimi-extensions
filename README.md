@@ -102,7 +102,9 @@ We've introduced a **TypeScript Build Pipeline** to make extending AutaKimi much
    - This compiles your TS files statically, bundles native extensions into the `js/` directory, and updates `templates.json` and `plugins.json` automatically.
 4. **Test in AutaKimi**:
    - Launch the AutaKimi Desktop App in development mode (`npm run dev:desktop`).
-   - The app's `localFileInterceptor` will automatically intercept fetches to the remote GitHub repository and serve your newly built local files (including the `js/*.js` bundles) directly from your disk!
+   - Go to **Settings > Extensions** and add your local `dist/` directory (e.g., `D:\DEV\Apps\AutaKimi\autakimi-extensions\dist`).
+   - The app's `localFileInterceptor` will automatically intercept fetches to the remote GitHub repository and serve your newly built local files (including the `js/*.js` bundles) directly from your `dist/` folder!
+   - **IMPORTANT FOR NATIVE EXTENSIONS:** Native extensions (`.js` files) are cached in the app's internal database. If you make changes to a native extension, you **must** go to the Extensions page, click **Uninstall** on your extension, and then click **Install** again. This forces the app to fetch your newly built local `.js` file instead of using the cached code!
 
 ### Automated Distribution (GitHub Actions)
 
