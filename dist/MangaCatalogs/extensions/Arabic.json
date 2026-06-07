@@ -165,6 +165,21 @@
     ]
   },
   {
+    "name": "Eshadow",
+    "pkg": "ma.autakimi.extension.ar.eshadow",
+    "lang": "ar",
+    "version": "0.0.1",
+    "nsfw": 0,
+    "sources": [
+      {
+        "name": "إيشادو",
+        "lang": "ar",
+        "id": "7833471811016140678",
+        "baseUrl": "https://www.eshadow.net"
+      }
+    ]
+  },
+  {
     "name": "Golden Manga",
     "pkg": "ma.autakimi.extension.ar.goldenmanga",
     "lang": "ar",
@@ -282,7 +297,8 @@
         "id": "918460697583900080",
         "baseUrl": "https://lek-manga.net"
       }
-    ]
+    ],
+    "baseClass": "Native"
   },
   {
     "name": "Mangalink",
@@ -330,6 +346,22 @@
     ]
   },
   {
+    "name": "MangaSid",
+    "pkg": "ma.autakimi.extension.ar.mangasid",
+    "lang": "ar",
+    "version": "0.0.1",
+    "nsfw": 0,
+    "baseClass": "Native",
+    "sources": [
+      {
+        "name": "مانجا سيد",
+        "lang": "ar",
+        "id": "7657007209499352345",
+        "baseUrl": "https://mangasid.com"
+      }
+    ]
+  },
+  {
     "name": "MangaSpark",
     "pkg": "ma.autakimi.extension.ar.mangaspark",
     "lang": "ar",
@@ -372,7 +404,8 @@
         "id": "7657007209499352344",
         "baseUrl": "https://appswat.com"
       }
-    ]
+    ],
+    "baseClass": "Native"
   },
   {
     "name": "Manga Tales",
@@ -627,7 +660,8 @@
         "id": "4110737012647435874",
         "baseUrl": "https://olympustaff.com"
       }
-    ]
+    ],
+    "baseClass": "Native"
   },
   {
     "name": "WaveTeamy",
@@ -701,37 +735,6 @@
         "lang": "ar",
         "id": "7833471811016150678",
         "baseUrl": "https://yurimoonsub.blogspot.com"
-      }
-    ]
-  },
-  {
-    "name": "MangaSid",
-    "pkg": "ma.autakimi.extension.ar.mangasid",
-    "lang": "ar",
-    "version": "0.0.1",
-    "nsfw": 0,
-    "baseClass": "Native",
-    "sources": [
-      {
-        "name": "مانجا سيد",
-        "lang": "ar",
-        "id": "7657007209499352345",
-        "baseUrl": "https://mangasid.com"
-      }
-    ]
-  },
-  {
-    "name": "Eshadow",
-    "pkg": "ma.autakimi.extension.ar.eshadow",
-    "lang": "ar",
-    "version": "0.0.1",
-    "nsfw": 0,
-    "sources": [
-      {
-        "name": "إيشادو",
-        "lang": "ar",
-        "id": "7833471811016140678",
-        "baseUrl": "https://www.eshadow.net"
       }
     ]
   }

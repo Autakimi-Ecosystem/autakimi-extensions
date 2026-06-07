@@ -13,18 +13,18 @@ vi.mock('@renderer/shared/api', () => ({
 }))
 
 // Import sources to test
-import { MangaDexSource } from '../src/native/MangaDexSource'
-import { ShahiidAnimeSource } from '../src/native/ma.autakimi.extension.ar.shahiidanime'
+import { MangaDexSource } from '../src/extensions/manga/all/mangadex/index'
+import { ShahiidAnimeSource } from '../src/extensions/anime/ar/shahiidanime/index'
 
 describe('Native Sources Integration Tests', () => {
   it('ShahiidAnimeSource - fetchPopular should return manga', async () => {
     const source = new ShahiidAnimeSource()
     const result = await source.fetchPopular(1)
-    
+
     expect(result).toBeDefined()
     expect(result.manga).toBeInstanceOf(Array)
     expect(result.manga.length).toBeGreaterThan(0)
-    
+
     // Verify structure
     const firstManga = result.manga[0]
     expect(firstManga.id).toBeDefined()
@@ -36,11 +36,11 @@ describe('Native Sources Integration Tests', () => {
   it('MangaDexSource - fetchPopular should return manga', async () => {
     const source = new MangaDexSource()
     const result = await source.fetchPopular(1)
-    
+
     expect(result).toBeDefined()
     expect(result.manga).toBeInstanceOf(Array)
     expect(result.manga.length).toBeGreaterThan(0)
-    
+
     // Verify structure
     const firstManga = result.manga[0]
     expect(firstManga.id).toBeDefined()
