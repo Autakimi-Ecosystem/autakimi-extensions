@@ -1,0 +1,14 @@
+{
+  "version": "1.0.4",
+  "name": "AutaKimi Official Extensions",
+  "templates": "templates.json",
+  "plugins": "plugins.json",
+  "catalogs": {
+    "manga": "manga_catalogs.json",
+    "anime": "anime_catalogs.json"
+  },
+  "sources": {
+    "manga": "manga_sources.json",
+    "anime": "anime_sources.json"
+  }
+}
