@@ -297,6 +297,51 @@ export default executeExtension(source, params);
     const catalogDir = path.join(DIST_DIR, catalogName, 'extensions')
     if (!fs.existsSync(catalogDir)) fs.mkdirSync(catalogDir, { recursive: true })
 
+    const availableCatalogs: string[] = []
+
+    // 1. Process legacy community catalogs
+    const legacyDir = path.join(EXTENSIONS_DIR, catalogName)
+    if (fs.existsSync(legacyDir)) {
+      const legacyFiles = fs.readdirSync(legacyDir).filter((f) => f.endsWith('.json'))
+      for (const file of legacyFiles) {
+        const filePath = path.join(legacyDir, file)
+        const fileContent = fs.readFileSync(filePath, 'utf8')
+        try {
+          const legacyData = JSON.parse(fileContent)
+
+          // Copy to dist/MangaCatalogs/
+          const destDir = path.join(DIST_DIR, catalogName)
+          if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true })
+          fs.writeFileSync(path.join(destDir, file), fileContent, 'utf8')
+
+          availableCatalogs.push(file)
+
+          // Extract sources
+          const items = Array.isArray(legacyData) ? legacyData : Object.values(legacyData)
+          for (const item of items as any[]) {
+            const firstSource = item.sources && item.sources[0] ? item.sources[0] : {}
+            sourcesArr.push({
+              id: item.pkg || item.id,
+              name: item.name,
+              url: item.baseUrl || firstSource.baseUrl || '',
+              templateId: item.templateId || undefined,
+              icon: `autakimi-cache://local-icon/${item.pkg || item.id}.png`,
+              nsfw:
+                item.nsfw === 1 ||
+                item.nsfw === true ||
+                item.nsfw === 'true' ||
+                firstSource.nsfw === 1 ||
+                firstSource.nsfw === true,
+              language: item.lang || 'all'
+            })
+          }
+        } catch (e) {
+          console.error(`[Error] Failed to parse legacy catalog ${filePath}`, e)
+        }
+      }
+    }
+
+    // 2. Process compiled native extensions
     const langMap: Record<string, string> = {
       ar: 'Arabic',
       en: 'English',
@@ -316,7 +361,7 @@ export default executeExtension(source, params);
       vi: 'Vietnamese'
     }
 
-    const availableCatalogs: string[] = []
+    // const availableCatalogs: string[] = [] // Already declared above
     for (const [lang, exts] of Object.entries(catalogs)) {
       const fileName = `${langMap[lang] || lang}.json`
       availableCatalogs.push(`extensions/${fileName}`)
@@ -344,8 +389,37 @@ export default executeExtension(source, params);
   writeCatalogs(animeCatalogs, 'AnimeCatalogs', 'anime_sources.json', animeSources)
 }
 
+function buildManifest() {
+  console.log('Building manifest...')
+  if (!fs.existsSync(DIST_DIR)) fs.mkdirSync(DIST_DIR, { recursive: true })
+
+  const manifestFile = path.join(DIST_DIR, 'manifest.json')
+  const pkgVersion =
+    JSON.parse(fs.readFileSync(path.join(EXTENSIONS_DIR, 'package.json'), 'utf8')).version ||
+    '1.0.0'
+
+  const manifest = {
+    version: pkgVersion,
+    name: 'AutaKimi Official Extensions',
+    templates: 'templates.json',
+    plugins: 'plugins.json',
+    catalogs: {
+      manga: 'manga_catalogs.json',
+      anime: 'anime_catalogs.json'
+    },
+    sources: {
+      manga: 'manga_sources.json',
+      anime: 'anime_sources.json'
+    }
+  }
+
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2) + '\n', 'utf8')
+  console.log('Successfully wrote manifest.json.')
+}
+
 async function run() {
   try {
+    buildManifest()
     buildTemplates()
     buildPlugins()
     await buildExtensionsAndCatalogs()

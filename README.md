@@ -2,6 +2,20 @@
 
 This repository is the centralized ecosystem for dynamic logic and content discovery in **AutaKimi**. It allows the application to remain a neutral framework while providing powerful community-driven features.
 
+## 📖 Quick Guide: Adding Extensions (Repositories)
+
+To use these extensions in your AutaKimi app, you need to subscribe to this repository. Follow these simple steps:
+
+1. Open the AutaKimi app and navigate to the **Repositories** or **Sources** page.
+2. Copy the official community repository URL below:
+   ```http
+   https://raw.githubusercontent.com/Autakimi-Ecosystem/autakimi-extensions/main/dist/manifest.json
+   ```
+3. Paste the URL into the input field and confirm to add it.
+4. AutaKimi will automatically parse, fetch, and register all available catalogs, scraping templates, icons, and helper plugins!
+
+---
+
 ## 📂 Repository Structure
 
 | File | Purpose |
