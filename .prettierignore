@@ -1,0 +1,11 @@
+node_modules
+dist
+js
+MangaCatalogs
+AnimeCatalogs
+manga_sources.json
+anime_sources.json
+manga_catalogs.json
+anime_catalogs.json
+plugins.json
+templates.json

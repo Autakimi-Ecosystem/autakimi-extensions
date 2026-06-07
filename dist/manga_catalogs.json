@@ -1,6 +1,28 @@
 {
   "version": "1.1.0",
   "catalogs": [
-    "extensions/Global.json"
+    "extensions/Global.json",
+    "extensions/Arabic.json",
+    "extensions/bg.json",
+    "extensions/ca.json",
+    "extensions/cs.json",
+    "extensions/de.json",
+    "extensions/English.json",
+    "extensions/Spanish.json",
+    "extensions/French.json",
+    "extensions/Indonesian.json",
+    "extensions/Italian.json",
+    "extensions/Japanese.json",
+    "extensions/Korean.json",
+    "extensions/Polish.json",
+    "extensions/pt-BR.json",
+    "extensions/Russian.json",
+    "extensions/Thai.json",
+    "extensions/Turkish.json",
+    "extensions/Ukrainian.json",
+    "extensions/Vietnamese.json",
+    "extensions/zh.json",
+    "extensions/zh-Hans.json",
+    "extensions/zh-Hant.json"
   ]
 }
