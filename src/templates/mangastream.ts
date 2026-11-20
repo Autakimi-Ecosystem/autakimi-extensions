@@ -1,4 +1,4 @@
-export default function(baseUrl: string, ua: string) {
+export default function (baseUrl: string, ua: string) {
   return `const baseUrl = ${JSON.stringify(baseUrl)};
 
 if (typeof params !== "undefined" && params.type === "fetchPages") {
@@ -50,7 +50,14 @@ if (typeof params !== "undefined" && params.type === "fetchChapters") {
     let createdAt = a.find(".chapterdate").text().trim() || cardNode.find(".chapter-date").text().trim() || new Date().toISOString();
     
     if (url) {
-      items.push({ id: url, attributes: { chapter, title: "Chapter " + chapter, createdAt } });
+      items.push({
+        id: url,
+        url: url,
+        number: parseFloat(chapter) || (i + 1),
+        title: "Chapter " + chapter,
+        date: createdAt,
+        attributes: { chapter, title: "Chapter " + chapter, createdAt }
+      });
     }
   });
   
@@ -99,5 +106,5 @@ $(selectors.join(", ")).each((i, el) => {
 });
 
 return { data: items };
-`;
+`
 }

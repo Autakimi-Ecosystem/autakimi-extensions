@@ -206,9 +206,16 @@ export class MangaDexSource implements ISourceAdapter {
     }
   }
 
-  async fetchChapters(mangaId: string): Promise<Chapter[]> {
+  async fetchChapters(mangaId: string, options?: any): Promise<Chapter[]> {
     // Note: mangaId here is expected to be a UUID for MangaDex
-    const resRes = await fetch(`${this.baseUrl}/manga/${mangaId}/feed?limit=500&translatedLanguage[]=en&order[chapter]=desc`)
+    const targetLang = options?.lang || this.lang
+    const langParam =
+      targetLang && targetLang !== 'all'
+        ? `&translatedLanguage[]=${encodeURIComponent(targetLang)}`
+        : ''
+    const resRes = await fetch(
+      `${this.baseUrl}/manga/${mangaId}/feed?limit=500${langParam}&order[chapter]=desc`
+    )
     const res: any = await resRes.json()
     if (!res || !res.data) return []
 
@@ -242,4 +249,4 @@ export const config = {
   version: '0.0.1',
   baseClass: 'Native',
   sources: []
-};
+}

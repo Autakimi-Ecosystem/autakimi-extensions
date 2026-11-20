@@ -38,6 +38,37 @@ export class MangaLek extends MadaraSource {
     return this.fetchAjaxPagination(page, { m_orderby: 'latest' })
   }
 
+  private async fetchAjaxPagination(
+    page: number,
+    params: Record<string, string>
+  ): Promise<MangaPage> {
+    const orderby = params.m_orderby || 'latest'
+    const url = `${this.baseUrl}/?m_orderby=${orderby}&page=${page}`
+    try {
+      const res = await this.parseMangaList(url, { page, silent: true })
+      if (res.manga && res.manga.length > 0) return res
+    } catch {}
+
+    try {
+      const body = `action=madara_load_more&page=${page}&template=html&vars[m_orderby]=${orderby}`
+      const html = await this.fetchHtml(`${this.baseUrl}/wp-admin/admin-ajax.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Referer: this.baseUrl
+        },
+        body
+      })
+      if (html) {
+        const $ = cheerio.load(html)
+        const manga = (this as any).parseMangaItems($)
+        return { manga, hasNextPage: manga.length > 0 }
+      }
+    } catch {}
+
+    return { manga: [], hasNextPage: false }
+  }
+
   async fetchMangaDetails(manga: Manga): Promise<Manga> {
     try {
       return await super.fetchMangaDetails(manga)
@@ -105,18 +136,18 @@ export class MangaLek extends MadaraSource {
 }
 
 export const config = {
-  "name": "Mangalek",
-  "pkg": "ma.autakimi.extension.ar.mangalek",
-  "lang": "ar",
-  "version": "0.0.1",
-  "nsfw": 0,
-  "sources": [
+  name: 'Mangalek',
+  pkg: 'ma.autakimi.extension.ar.mangalek',
+  lang: 'ar',
+  version: '0.0.1',
+  nsfw: 0,
+  sources: [
     {
-      "name": "مانجا ليك",
-      "lang": "ar",
-      "id": "918460697583900080",
-      "baseUrl": "https://lek-manga.net"
+      name: 'مانجا ليك',
+      lang: 'ar',
+      id: '918460697583900080',
+      baseUrl: 'https://lek-manga.net'
     }
   ],
-  "baseClass": "Native"
-};
+  baseClass: 'Native'
+}

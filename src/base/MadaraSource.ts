@@ -1,5 +1,8 @@
 import * as cheerio from 'cheerio'
 import { ISourceAdapter, Manga, Chapter, MangaPage, FetchOptions } from '../types'
+import { safeUrl } from './urlUtils'
+
+export { safeUrl }
 
 export class MadaraSource implements ISourceAdapter {
   public theme: string = 'madara'
@@ -22,12 +25,14 @@ export class MadaraSource implements ISourceAdapter {
 
     // Minimal stealth headers for sandbox compatibility
     const defaultHeaders = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept:
+        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
-      'Referer': this.baseUrl
+      Referer: this.baseUrl
     }
-    
+
     try {
       // In the Sandbox VM, `fetch` is a global function injected by the orchestrator.
       const res = await fetch(url, {
@@ -36,13 +41,23 @@ export class MadaraSource implements ISourceAdapter {
       } as any)
 
       if (!res.ok) {
-        if (!options.silent) console.warn(`[MadaraSource] Fetch failed for ${url}: ${res.statusText}`)
+        const errorDetail =
+          res.status === 403
+            ? `HTTP 403 Forbidden / Cloudflare challenge triggered on ${url}`
+            : res.status === 429
+              ? `HTTP 429 Rate limited on ${url}`
+              : `HTTP ${res.status} ${res.statusText} for ${url}`
+        if (!options.silent) console.warn(`[MadaraSource] ${errorDetail}`)
+        if (options.throwOnError) {
+          throw new Error(errorDetail)
+        }
         return ''
       }
 
       return await res.text()
     } catch (e: any) {
       if (!options.silent) console.warn(`[MadaraSource] Fetch error for ${url}: ${e.message}`)
+      if (options.throwOnError) throw e
       return ''
     }
   }
@@ -79,18 +94,24 @@ export class MadaraSource implements ISourceAdapter {
 
     try {
       const { res, url } = await (Promise as any).any(promises)
-      const pattern = url.replace(`/page/${page}/`, '/page/{page}/').replace(`page=${page}`, 'page={page}')
+      const pattern = url
+        .replace(`/page/${page}/`, '/page/{page}/')
+        .replace(`page=${page}`, 'page={page}')
       if (!this.workingUrlPatterns.includes(pattern)) this.workingUrlPatterns.unshift(pattern)
       return res
     } catch {
       const fallbackUrl = urls[0]
       const fallbackRes = await this.parseMangaList(fallbackUrl, { page, silent: false })
       if (fallbackRes.manga && fallbackRes.manga.length > 0) {
-        const pattern = fallbackUrl.replace(`/page/${page}/`, '/page/{page}/').replace(`page=${page}`, 'page={page}')
+        const pattern = fallbackUrl
+          .replace(`/page/${page}/`, '/page/{page}/')
+          .replace(`page=${page}`, 'page={page}')
         if (!this.workingUrlPatterns.includes(pattern)) this.workingUrlPatterns.unshift(pattern)
         return fallbackRes
       }
-      throw new Error('No items found.')
+      throw new Error(
+        `No items found for ${this.name} (page ${page}). The site may be rate-limiting or requiring Cloudflare verification.`
+      )
     }
   }
 
@@ -126,18 +147,24 @@ export class MadaraSource implements ISourceAdapter {
 
     try {
       const { res, url } = await (Promise as any).any(promises)
-      const pattern = url.replace(`/page/${page}/`, '/page/{page}/').replace(`page=${page}`, 'page={page}')
+      const pattern = url
+        .replace(`/page/${page}/`, '/page/{page}/')
+        .replace(`page=${page}`, 'page={page}')
       if (!this.workingUrlPatterns.includes(pattern)) this.workingUrlPatterns.unshift(pattern)
       return res
     } catch {
       const fallbackUrl = urls[0]
       const fallbackRes = await this.parseMangaList(fallbackUrl, { page, silent: false })
       if (fallbackRes.manga && fallbackRes.manga.length > 0) {
-        const pattern = fallbackUrl.replace(`/page/${page}/`, '/page/{page}/').replace(`page=${page}`, 'page={page}')
+        const pattern = fallbackUrl
+          .replace(`/page/${page}/`, '/page/{page}/')
+          .replace(`page=${page}`, 'page={page}')
         if (!this.workingUrlPatterns.includes(pattern)) this.workingUrlPatterns.unshift(pattern)
         return fallbackRes
       }
-      throw new Error('No items found.')
+      throw new Error(
+        `No items found for ${this.name} (page ${page}). The site may be rate-limiting or requiring Cloudflare verification.`
+      )
     }
   }
 
@@ -160,37 +187,53 @@ export class MadaraSource implements ISourceAdapter {
       if (!mangaUrl || seen.has(mangaUrl) || !title) return
       seen.add(mangaUrl)
 
-      if (mangaUrl.startsWith('/')) {
-        mangaUrl = new URL(mangaUrl, this.baseUrl).toString()
-      }
+      mangaUrl = safeUrl(mangaUrl, this.baseUrl)
+      if (!mangaUrl) return
 
       const imgNode = node.find('img').first()
-      let cover = imgNode.attr('src') || imgNode.attr('data-src') || imgNode.attr('data-lazy-src') || ''
-      if (cover && cover.startsWith('/')) {
-        cover = new URL(cover, this.baseUrl).toString()
-      }
+      let cover =
+        imgNode.attr('src') || imgNode.attr('data-src') || imgNode.attr('data-lazy-src') || ''
+      cover = safeUrl(cover, this.baseUrl)
 
       let status = node.find('.mg_status, .status, .post-on').first().text().trim()
       if (!status) status = node.find('.post-on a').attr('title') || ''
 
-      const description = node.find('.post-content_item .summary-content').text().trim() ||
+      const description =
+        node.find('.post-content_item .summary-content').text().trim() ||
         node.find('.manga-excerpt').text().trim() ||
-        node.find('.summary-content').text().trim() || ''
+        node.find('.summary-content').text().trim() ||
+        ''
 
-      manga.push({ id: mangaUrl, title, coverUrl: cover, url: mangaUrl, status: status || 'Unknown', description, pkg: this.id })
+      manga.push({
+        id: mangaUrl,
+        title,
+        coverUrl: cover,
+        url: mangaUrl,
+        status: status || 'Unknown',
+        description,
+        pkg: this.id
+      })
     })
 
     return manga
   }
 
   protected async parseMangaList(url: string, options: FetchOptions = {}): Promise<MangaPage> {
-    const targetUrl = url.includes('{page}') ? url.replace('{page}', String(options.page || '1')) : url
-    const html = await this.fetchHtml(targetUrl, options)
-    if (!html) return { manga: [], hasNextPage: false }
+    const targetUrl = url.includes('{page}')
+      ? url.replace('{page}', String(options.page || '1'))
+      : url
+    const html = await this.fetchHtml(targetUrl, { ...options, throwOnError: !options.silent })
+    if (!html) {
+      if (!options.silent) {
+        throw new Error(`Failed to load manga list: empty response or blocked from ${targetUrl}`)
+      }
+      return { manga: [], hasNextPage: false }
+    }
 
     const $ = cheerio.load(html)
     const manga = this.parseMangaItems($)
-    const hasNextPage = $('.nextpostslink, .next, .nav-previous a, .paging-navigation a, .load-more').length > 0
+    const hasNextPage =
+      $('.nextpostslink, .next, .nav-previous a, .paging-navigation a, .load-more').length > 0
     return { manga, hasNextPage }
   }
 
@@ -199,14 +242,19 @@ export class MadaraSource implements ISourceAdapter {
     const $ = cheerio.load(html)
 
     const title = $('.post-title h1, .manga-title h1').text().trim() || manga.title
-    const description = $('.summary__content').text().trim() || $('.description-summary').text().trim() ||
-      $('.manga-excerpt').text().trim() || $('.tab-summary').text().trim()
+    const description =
+      $('.summary__content').text().trim() ||
+      $('.description-summary').text().trim() ||
+      $('.manga-excerpt').text().trim() ||
+      $('.tab-summary').text().trim()
     const author = $('.author-content').text().trim()
     const artist = $('.artist-content').text().trim()
     const status = $('.post-status .summary-content').first().text().trim()
 
     const genres: string[] = []
-    $('.genres-content a').each((_, el) => { genres.push($(el).text().trim()) })
+    $('.genres-content a').each((_, el) => {
+      genres.push($(el).text().trim())
+    })
 
     return { ...manga, title, description, author, artist, status, genres }
   }
@@ -216,17 +264,29 @@ export class MadaraSource implements ISourceAdapter {
     if (!html) return []
     let $ = cheerio.load(html)
 
-    const chapterSelector = this.customSelectors?.chapterListSelector || '.wp-manga-chapter a, li.wp-manga-chapter a, .chapter-item .chapter a, .li .chapter a, .chapter-link'
+    const chapterSelector =
+      this.customSelectors?.chapterListSelector ||
+      '.wp-manga-chapter a, li.wp-manga-chapter a, .chapter-item .chapter a, .li .chapter a, .chapter-link'
     let rows = $(chapterSelector)
 
     if (rows.length === 0) {
-      const mangaIdNode = $('input.rating-post-id, #manga-chapters-holder, input#manga-id, input[name="manga"]')
+      const mangaIdNode = $(
+        'input.rating-post-id, #manga-chapters-holder, input#manga-id, input[name="manga"]'
+      )
       const mangaId = mangaIdNode.attr('value') || mangaIdNode.attr('data-id')
 
       if (mangaId) {
-        const ajaxHeaders = { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest', Referer: mangaUrl }
-        let ajaxHtml = await this.fetchHtml(`${this.baseUrl}/wp-admin/admin-ajax.php`, { method: 'POST', headers: ajaxHeaders, body: `action=manga_get_chapters&manga=${mangaId}` })
-        
+        const ajaxHeaders = {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+          Referer: mangaUrl
+        }
+        let ajaxHtml = await this.fetchHtml(`${this.baseUrl}/wp-admin/admin-ajax.php`, {
+          method: 'POST',
+          headers: ajaxHeaders,
+          body: `action=manga_get_chapters&manga=${mangaId}`
+        })
+
         if (ajaxHtml && ajaxHtml.trim().startsWith('{')) {
           try {
             const json = JSON.parse(ajaxHtml)
@@ -240,9 +300,17 @@ export class MadaraSource implements ISourceAdapter {
         }
 
         if (rows.length === 0) {
-          const fallbacks = [`action=manga_get_chapters&manga_id=${mangaId}`, `action=ajax_chap&id=${mangaId}`, `action=manga_get_chapters&m_id=${mangaId}`]
+          const fallbacks = [
+            `action=manga_get_chapters&manga_id=${mangaId}`,
+            `action=ajax_chap&id=${mangaId}`,
+            `action=manga_get_chapters&m_id=${mangaId}`
+          ]
           for (const body of fallbacks) {
-            const res = await this.fetchHtml(`${this.baseUrl}/wp-admin/admin-ajax.php`, { method: 'POST', headers: ajaxHeaders, body })
+            const res = await this.fetchHtml(`${this.baseUrl}/wp-admin/admin-ajax.php`, {
+              method: 'POST',
+              headers: ajaxHeaders,
+              body
+            })
             if (res && res.length > 50) {
               $ = cheerio.load(res)
               rows = $(chapterSelector)
@@ -252,9 +320,12 @@ export class MadaraSource implements ISourceAdapter {
         }
 
         if (rows.length === 0) {
-          const slugAjaxUrl = mangaUrl.endsWith('/') ? `${mangaUrl}ajax/chapters/` : `${mangaUrl}/ajax/chapters/`
+          const slugAjaxUrl = mangaUrl.endsWith('/')
+            ? `${mangaUrl}ajax/chapters/`
+            : `${mangaUrl}/ajax/chapters/`
           let sRes = await this.fetchHtml(slugAjaxUrl, { method: 'POST', headers: ajaxHeaders })
-          if (!sRes || sRes.length < 50) sRes = await this.fetchHtml(slugAjaxUrl, { method: 'GET', headers: ajaxHeaders })
+          if (!sRes || sRes.length < 50)
+            sRes = await this.fetchHtml(slugAjaxUrl, { method: 'GET', headers: ajaxHeaders })
           if (sRes && sRes.length > 50) {
             $ = cheerio.load(sRes)
             rows = $(chapterSelector)
@@ -271,9 +342,19 @@ export class MadaraSource implements ISourceAdapter {
       const numStr = title.match(/\d+[\.\d]*/)?.[0] || '0'
       const container = a.closest('.wp-manga-chapter, li, .chapter-item')
       let dateStr = container.find('.chapter-release-date, .post-on').text().trim()
-      if (!dateStr || dateStr.length < 3) dateStr = container.find('.post-on a').attr('title') || container.find('.chapter-release-date a').attr('title') || ''
+      if (!dateStr || dateStr.length < 3)
+        dateStr =
+          container.find('.post-on a').attr('title') ||
+          container.find('.chapter-release-date a').attr('title') ||
+          ''
       if (url) {
-        chapters.push({ id: url, title, url, number: parseFloat(numStr) || rows.length - i, date: dateStr || undefined })
+        chapters.push({
+          id: url,
+          title,
+          url,
+          number: parseFloat(numStr) || rows.length - i,
+          date: dateStr || undefined
+        })
       }
     })
     return chapters
@@ -285,7 +366,11 @@ export class MadaraSource implements ISourceAdapter {
     const $ = cheerio.load(html)
     const pages: string[] = []
     $('.page-break img, .reading-content img, .wp-manga-chapter-img img').each((_, el) => {
-      const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src') || $(el).attr('data-cdn')
+      const src =
+        $(el).attr('src') ||
+        $(el).attr('data-src') ||
+        $(el).attr('data-lazy-src') ||
+        $(el).attr('data-cdn')
       if (src && src.trim() && !src.includes('data:image')) pages.push(src.trim())
     })
     return pages

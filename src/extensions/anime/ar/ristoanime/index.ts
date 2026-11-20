@@ -3,7 +3,7 @@ import { Manga, MangaPage, Chapter } from '../../sources/types'
 import * as cheerio from 'cheerio'
 
 /**
- * RistoAnime source adapter for https://ristoanime.co/
+ * RistoAnime source adapter for https://ristoanime.cc/
  */
 export class RistoAnimeSource extends AnimeSource {
   constructor() {
@@ -258,14 +258,45 @@ export class RistoAnimeSource extends AnimeSource {
 
     if (!html) {
       const epHtml = await this.fetchHtml(episodeUrl)
+      const rawServers = epHtml ? this._extractIframes(epHtml) : []
+      const servers: any[] = []
+      for (const s of rawServers) {
+        const direct = await this.resolveDirectStream(s.url)
+        if (direct) {
+          servers.push({
+            name: `${s.name} ⚡ Direct`,
+            url: direct.url,
+            type: direct.type,
+            headers: direct.headers
+          })
+        } else {
+          servers.push(s)
+        }
+      }
       return {
-        urls: epHtml ? this._extractIframes(epHtml) : [],
+        urls: servers,
         debug: { ...debugInfo, fallbackUrl: episodeUrl, fallbackHtmlLength: epHtml?.length || 0 }
       }
     }
 
+    const rawServers = this._extractIframes(html)
+    const servers: any[] = []
+    for (const s of rawServers) {
+      const direct = await this.resolveDirectStream(s.url)
+      if (direct) {
+        servers.push({
+          name: `${s.name} ⚡ Direct`,
+          url: direct.url,
+          type: direct.type,
+          headers: direct.headers
+        })
+      } else {
+        servers.push(s)
+      }
+    }
+
     return {
-      urls: this._extractIframes(html),
+      urls: servers,
       debug: { ...debugInfo, allIframes: this._getAllIframes(html) }
     }
   }
@@ -375,5 +406,5 @@ export const config = {
   type: 'anime',
   version: '0.0.1',
   baseClass: 'Native',
-  sources: [{ name: 'RistoAnime', id: '12345', baseUrl: 'https://ristoanime.com' }]
-};
+  sources: [{ name: 'RistoAnime', id: '12345', baseUrl: 'https://ristoanime.cc' }]
+}
