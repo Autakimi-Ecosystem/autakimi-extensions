@@ -53,7 +53,10 @@ function buildTemplates() {
       continue
     }
 
-    const generatorCode = fileContent.slice(startIdx, endIdx + 1).trim()
+    const generatorCode = fileContent
+      .slice(startIdx, endIdx + 1)
+      .replace(/\r\n/g, '\n')
+      .trim()
 
     // Find existing metadata or use default
     const existing = existingData.templates.find((t) => t.id === id)
