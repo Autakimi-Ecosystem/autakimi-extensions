@@ -1,4 +1,4 @@
-export default function(baseUrl: string, ua: string) {
+export default function (baseUrl: string, ua: string) {
   return `const baseUrl = ${JSON.stringify(baseUrl)};
 
 if (typeof params !== "undefined" && params.type === "fetchPages") {
@@ -49,7 +49,14 @@ if (typeof params !== "undefined" && params.type === "fetchChapters") {
     const url = a.attr("href");
     const chapter = a.text().trim().replace(/Chapter/i, "").replace(/الفصل/i, "").trim();
     if (url) {
-      items.push({ id: url, attributes: { chapter, title: "Chapter " + chapter, createdAt: new Date().toISOString() } });
+      items.push({
+        id: url,
+        url: url,
+        number: parseFloat(chapter) || 0,
+        title: "Chapter " + chapter,
+        date: new Date().toISOString(),
+        attributes: { chapter, title: "Chapter " + chapter, createdAt: new Date().toISOString() }
+      });
     }
   });
   return { data: items };
@@ -91,5 +98,5 @@ $(".manga-item, .page-item-detail, .c-tabs-item__content, .popular-item, .widget
 });
 
 return { data: items };
-`;
+`
 }

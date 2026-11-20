@@ -428,6 +428,7 @@
     "lang": "ar",
     "version": "0.0.1",
     "nsfw": 0,
+    "baseClass": "Native",
     "sources": [
       {
         "name": "MangaTek",

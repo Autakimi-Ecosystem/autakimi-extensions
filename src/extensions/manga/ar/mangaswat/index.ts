@@ -173,7 +173,9 @@ export class MangaSwat implements ISourceAdapter {
       id: String(item.id),
       title: item.title || `Chapter ${item.chapter}`,
       url: `https://appswat.com/chapter/${item.id}`,
-      number: parseFloat(item.chapter) || 0,
+      number: String(item.chapter || item.title || '').match(/[\d.]+/)
+        ? parseFloat(String(item.chapter || item.title || '').match(/[\d.]+/)[0])
+        : 0,
       date: item.created_at_humanized
     }))
   }
@@ -204,18 +206,18 @@ export class MangaSwat implements ISourceAdapter {
 }
 
 export const config = {
-  "name": "MangaSwat",
-  "pkg": "ma.autakimi.extension.ar.mangaswat",
-  "lang": "ar",
-  "version": "0.0.1",
-  "nsfw": 0,
-  "sources": [
+  name: 'MangaSwat',
+  pkg: 'ma.autakimi.extension.ar.mangaswat',
+  lang: 'ar',
+  version: '0.0.1',
+  nsfw: 0,
+  sources: [
     {
-      "name": "MangaSwat",
-      "lang": "ar",
-      "id": "7657007209499352344",
-      "baseUrl": "https://appswat.com"
+      name: 'MangaSwat',
+      lang: 'ar',
+      id: '7657007209499352344',
+      baseUrl: 'https://appswat.com'
     }
   ],
-  "baseClass": "Native"
-};
+  baseClass: 'Native'
+}

@@ -1,12 +1,13 @@
 {
   "name": "autakimi-extensions",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "AutaKimi Community Extensions and Plugins",
   "scripts": {
     "build": "tsx build.ts",
+    "test:extensions": "tsx scripts/test-extensions.ts",
     "release": "node scripts/release.mjs",
     "test": "vitest",
-    "lint": "eslint . --ext .ts,.js",
+    "lint": "eslint .",
     "format": "prettier --write .",
     "prepare": "husky"
   },

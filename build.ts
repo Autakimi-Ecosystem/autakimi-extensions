@@ -249,8 +249,11 @@ export default executeExtension(source, params);
                 globalName: 'extension_module',
                 target: 'es2020',
                 platform: 'browser',
+                minify: true,
                 external: ['cheerio'],
-                minify: true
+                banner: {
+                  js: 'var require = typeof require !== "undefined" ? require : (function(m) { if (m === "cheerio") return (typeof cheerio !== "undefined" ? cheerio : (typeof globalThis !== "undefined" ? globalThis.cheerio : undefined)); throw new Error("Dynamic require of \\"" + m + "\\" is not supported"); });'
+                }
               })
 
               const bundledCode = fs.readFileSync(outPath, 'utf8')

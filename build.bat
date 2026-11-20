@@ -1,10 +1,13 @@
 @echo off
+setlocal
+cd /d "%~dp0"
+
 echo ===========================================
 echo   Building AutaKimi Extensions...
 echo ===========================================
 echo.
 
-npx tsx build.ts
+call npm run build
 
 echo.
 if %ERRORLEVEL% NEQ 0 (
