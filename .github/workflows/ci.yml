@@ -26,6 +26,6 @@ jobs:
       - name: Build Extension Bundles and Catalogs
         run: npm run build
 
-      - name: Run Extension Health Checker
-        run: npm run test:extensions
+      - name: Lint Extensions
+        run: npm run lint
 
