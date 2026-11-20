@@ -2,9 +2,9 @@ name: Extensions Build & Health Check CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, cool ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, cool ]
 
 jobs:
   test-and-build:
@@ -22,12 +22,10 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
-        working-directory: ./autakimi-extensions
 
       - name: Build Extension Bundles and Catalogs
         run: npm run build
-        working-directory: ./autakimi-extensions
 
       - name: Run Extension Health Checker
         run: npm run test:extensions
-        working-directory: ./autakimi-extensions
+
