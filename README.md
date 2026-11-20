@@ -1,140 +1,235 @@
-# 🧩 AutaKimi Extensions & Plugins
+# 🧩 AutaKimi Extensions & Plugins Ecosystem
 
-This repository is the centralized ecosystem for dynamic logic and content discovery in **AutaKimi**. It allows the application to remain a neutral framework while providing powerful community-driven features.
+[![Build & Distribute Extensions](https://github.com/Autakimi-Ecosystem/autakimi-extensions/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/Autakimi-Ecosystem/autakimi-extensions/actions/workflows/build.yml)
+[![Ecosystem](https://img.shields.io/badge/Ecosystem-AutaKimi-purple.svg)](https://github.com/anasx07/AutaKimi)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Bundled with esbuild](https://img.shields.io/badge/Bundler-esbuild-orange.svg)](https://esbuild.github.io/)
+[![Tested with Vitest](https://img.shields.io/badge/Tests-Vitest-green.svg)](https://vitest.dev/)
+[![Code Style: Prettier](https://img.shields.io/badge/Code%20Style-Prettier-ff69b4.svg)](https://prettier.io)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-## 📖 Quick Guide: Adding Extensions (Repositories)
+This repository is the official, community-driven catalog and build pipeline for **AutaKimi** extensions, scraping engines, and automation plugins. It allows the core [AutaKimi application](https://github.com/anasx07/AutaKimi) to maintain a lean, neutral "empty shell" architecture while delivering dynamic, fast, and multi-language content discovery.
 
-To use these extensions in your AutaKimi app, you need to subscribe to this repository. Follow these simple steps:
+---
 
-1. Open the AutaKimi app and navigate to the **Repositories** or **Sources** page.
-2. Copy the official community repository URL below:
+## 📖 Quick Start: Adding Extensions to AutaKimi
+
+To access these extensions in your AutaKimi app (Desktop or Mobile):
+
+1. Open **AutaKimi** and navigate to **Settings** ➔ **Extensions / Repositories**.
+2. Click **Add Repository** and paste the official repository URL:
    ```http
    https://raw.githubusercontent.com/Autakimi-Ecosystem/autakimi-extensions/main/dist/manifest.json
    ```
-3. Paste the URL into the input field and confirm to add it.
-4. AutaKimi will automatically parse, fetch, and register all available catalogs, scraping templates, icons, and helper plugins!
+3. Confirm to subscribe. AutaKimi will automatically discover, categorize, and hydrate:
+   - 🎬 **Anime Catalogs** (Arabic, English, etc.)
+   - 📖 **Manga & Comic Catalogs** across 20+ languages
+   - ⚡ **Dynamic Scraping Engines & Templates** (Madara, MangaThemesia, etc.)
+   - 🛡️ **Automation Plugins** (e.g., Cloudflare challenge solvers)
+   - 🖼️ **Offline Cached High-Resolution Icons**
 
 ---
 
-## 📂 Repository Structure
+## 🏛️ Ecosystem Architecture
 
-| File | Purpose |
-| :--- | :--- |
-| `templates.json` | Master engines for various website themes (Madara, MangaStream, etc). |
-| `plugins.json` | Sandboxed JavaScript modules for specialized tasks (e.g., Cloudflare solving). |
-| `manga_sources.json` | Curated list of manga providers and their associated templates. |
-| `anime_sources.json` | Curated list of anime providers. |
-| `manga_catalogs.json` | Index of all available language-specific Manga catalogs. |
-| `anime_catalogs.json` | Index of all available language-specific Anime catalogs. |
-| `MangaCatalogs/` | JSON files containing community-maintained metadata for manga sources. |
-| `AnimeCatalogs/` | JSON files containing community-maintained metadata for anime sources. |
-| `icons/` | High-quality icons for various extensions and sources. |
-
----
-
-## ⚡ Plugin System
-Plugins are sandboxed JavaScript modules that run in the AutaKimi Main Process within a `vm.createContext` sandbox.
-
-### Plugin Manifest Schema
-```json
-{
-  "id": "unique-plugin-id",
-  "name": "Display Name",
-  "description": "What it does",
-  "author": "Author Name",
-  "version": "1.0.0",
-  "target": "main-cloudflare",
-  "code": "return (context) => { ... }"
-}
 ```
-
-### Supported Targets
-- `main-cloudflare`: Runs automatically when a browser challenge window is opened. Receives `{ win }` (BrowserWindow proxy) in the context.
-
-### Lifecycle & Disposers
-Plugins must return an asynchronous function (the executor). This executor can optionally return a **Disposer** (cleanup function).
-```javascript
-return async (context) => {
-  const interval = setInterval(() => { ... }, 1000);
-  // Cleanup on success or window close
-  return () => clearInterval(interval);
-}
+autakimi-extensions/
+├── src/
+│   ├── base/                     # Core base classes & runtime dispatcher
+│   │   ├── AnimeSource.ts        # Abstract base class for anime scrapers & stream extractors
+│   │   ├── MadaraSource.ts       # Base class for WordPress Madara-themed sources
+│   │   ├── sandboxDispatcher.ts  # Standard IPC bridge between sandbox & extension methods
+│   │   └── urlUtils.ts           # URL resolution and formatting helpers
+│   ├── extensions/               # Native TypeScript extensions
+│   │   ├── anime/                # Anime sources partitioned by language
+│   │   │   └── ar/               # Arabic anime providers (Anime4up, WitAnime, RistoAnime, ShahiidAnime)
+│   │   └── manga/                # Manga sources partitioned by language (ar, en, fr, es, etc.)
+│   ├── plugins/                  # Sandboxed Electron plugins (e.g., auto-solve-cf)
+│   ├── templates/                # Reusable regex/DOM scraping templates (madara, mangastream)
+│   └── types/                    # Unified TypeScript type definitions
+├── dist/                         # Auto-compiled distribution artifacts (published on main)
+│   ├── js/                       # Standalone minified IIFE bundles built by esbuild
+│   ├── icons/                    # Source icons for offline caching
+│   ├── AnimeCatalogs/            # Language-specific anime catalog JSONs
+│   ├── MangaCatalogs/            # Language-specific manga catalog JSONs
+│   ├── manifest.json             # Root repository manifest
+│   ├── templates.json            # Dynamic template registry
+│   └── plugins.json              # Sandboxed helper plugins registry
+├── tests/                        # Vitest automated integration tests
+└── build.ts                      # Automated build orchestrator & esbuild compiler
 ```
 
 ---
 
-## 📡 Content Sources
-Sources define specific websites and link them to a scraping engine (template).
-```json
-{
-  "id": "asurascans",
-  "name": "Asura Scans",
-  "url": "https://asura.nacm.me",
-  "templateId": "mangastream",
-  "icon": "autakimi-cache://local-icon/asurascans.png"
-}
-```
+## ⚡ Extension Types
+
+### 1. 🎬 Native Anime Extensions
+
+Native anime extensions extend `AnimeSource` and provide robust web scraping for episode listings and direct video stream extraction:
+
+- **Direct Stream Extraction**: Extracts direct MP4/HLS streams from popular hosting providers (VOE, Uqload, VidMoly, StreamRuby, MixDrop) with automatic fallback.
+- **Embedded Player Support**: Fallback to sandboxed webview embeds when direct streams require specialized decryption.
+- **Built-in Sources**:
+  - `ma.autakimi.extension.ar.anime4up`
+  - `ma.autakimi.extension.ar.witanime`
+  - `ma.autakimi.extension.ar.ristoanime`
+  - `ma.autakimi.extension.ar.shahiidanime`
+
+### 2. 📖 Manga Extensions (Templates & Native)
+
+- **Template-Based Sources**: For sites running standard software (WordPress Madara, MangaThemesia/MangaStream), AutaKimi dynamically generates lightweight scrapers at runtime from `templates.json`.
+- **Native Sources**: Custom TypeScript classes for unique sites requiring bespoke HTML parsers (e.g., MangaDex, specialized aggregators).
+
+### 3. 🛡️ Sandboxed Helper Plugins
+
+Plugins are specialized JavaScript modules running inside an isolated VM within the AutaKimi main process:
+
+- **`auto-solve-cf`**: Automatically detects Cloudflare Turnstile / challenge checkpoints and guides the solver window until clearance cookies are captured.
 
 ---
 
-## 🛠️ Contributing
+## 🛠️ Developer Guide: Creating a New Extension
 
-We've introduced a **TypeScript Build Pipeline** to make extending AutaKimi much easier! You no longer need to write escaped JavaScript logic directly inside JSON strings. Instead, you can author clean, fully syntax-highlighted, and auto-completed TypeScript.
+We use a modern TypeScript build pipeline with `esbuild`, Vitest, and ESLint 9. You author clean, strongly-typed TypeScript without touching compiled JSON files.
 
-### Workflow & Directory Structure
+### 1. Prerequisites
 
-1. **Templates**:
-   - Write/edit templates inside the [`src/templates/`](file:///D:/DEV/Apps/AutaKimi/autakimi-extensions/src/templates) folder (e.g., `src/templates/madara.ts`).
-   - The file should export a default function returning the code string:
-     ```typescript
-     export default function(baseUrl: string, ua: string) {
-       return `const baseUrl = ${JSON.stringify(baseUrl)}; ...`;
-     }
-     ```
-2. **Plugins**:
-   - Write/edit sandboxed Electron plugins inside the [`src/plugins/`](file:///D:/DEV/Apps/AutaKimi/autakimi-extensions/src/plugins) folder (e.g., `src/plugins/auto-solve-cf.ts`).
-   - The file should export a default async executor function.
+- **Node.js**: `v20` or `v22` (LTS recommended)
+- **npm**: `v10+`
 
-3. **Native Extensions (Isolated Custom Logic)**:
-   - For sources that require completely custom parsing logic that doesn't fit into a template, write them as TypeScript classes in [`src/native/`](file:///D:/DEV/Apps/AutaKimi/autakimi-extensions/src/native).
-   - Ensure your class implements `ISourceAdapter` and extends sandbox-compatible bases (like `MadaraSource` from `src/base/`).
-   - The build pipeline will bundle these into standalone, isolated JavaScript payloads in the `js/` directory to run safely inside the App's Sandbox VM.
+### 2. Setup
 
-### Local Development & Building
+```bash
+# Clone the repository
+git clone https://github.com/Autakimi-Ecosystem/autakimi-extensions.git
+cd autakimi-extensions
 
-1. **Install Dependencies**:
+# Install dependencies
+npm install
+```
+
+### 3. Adding an Anime Extension
+
+Create a new folder inside `src/extensions/anime/<lang>/<extension-id>/`:
+
+```
+src/extensions/anime/ar/myanime/
+├── index.ts     # Extension logic & config
+└── icon.png     # Square PNG icon (min. 128x128)
+```
+
+In `index.ts`:
+
+```typescript
+import {
+  AnimeSource,
+  AnimeDetails,
+  Episode,
+  VideoServer,
+  VideoStream
+} from '../../../../base/AnimeSource'
+
+export const config = {
+  pkg: 'ma.autakimi.extension.ar.myanime',
+  name: 'MyAnime',
+  lang: 'ar',
+  version: '1.0.0',
+  baseUrl: 'https://myanime.example.com',
+  baseClass: 'Native',
+  type: 'anime',
+  nsfw: false
+}
+
+export class MyAnimeSource extends AnimeSource {
+  readonly baseUrl = config.baseUrl
+
+  async getPopularAnime(page = 1) {
+    // Implement popular anime fetching
+  }
+
+  async getLatestUpdates(page = 1) {
+    // Implement latest updates fetching
+  }
+
+  async searchAnime(query: string, page = 1) {
+    // Implement search
+  }
+
+  async getAnimeDetails(animeId: string): Promise<AnimeDetails> {
+    // Implement anime details extraction
+  }
+
+  async getEpisodes(animeId: string): Promise<Episode[]> {
+    // Implement episodes list extraction
+  }
+
+  async getVideoServers(episodeId: string): Promise<VideoServer[]> {
+    // Extract video servers (Uqload, VOE, VidMoly, etc.)
+  }
+
+  async getVideoStreams(serverUrl: string): Promise<VideoStream[]> {
+    // Resolve direct streaming URLs
+  }
+}
+```
+
+### 4. Adding a Manga Extension
+
+For manga sources:
+
+- Place your source under `src/extensions/manga/<lang>/<extension-id>/`.
+- If the site uses a known template (e.g., `madara` or `mangastream`), set `baseClass: 'Template'` and `templateId: 'madara'`.
+- If custom logic is required, set `baseClass: 'Native'` and extend `MadaraSource` or create a bespoke class.
+
+### 5. Local Testing & Quality Checks
+
+```bash
+# Compile extensions, bundle JS, and regenerate catalogs
+npm run build
+
+# Run unit and integration tests
+npm test
+
+# Run code linter
+npm run lint
+
+# Auto-format code
+npm run format
+```
+
+### 6. Testing Locally in AutaKimi Desktop
+
+1. Run `npm run build` in this repository.
+2. Launch AutaKimi Desktop in dev mode:
    ```bash
-   npm install
+   cd /path/to/AutaKimi
+   npm run dev:desktop
    ```
-2. **Update Metadata**:
-   - If adding a new source, update `manga_sources.json` or the relevant catalog (e.g., `MangaCatalogs/Arabic.json`). Make sure to use `"templateId": "native"` if it's a native extension.
-3. **Build the Extensions**:
-   - On Windows, simply double-click the `build.bat` file, OR run:
-   ```bash
-   npx tsx build.ts
-   ```
-   - This compiles your TS files statically, bundles native extensions into the `js/` directory, and updates `templates.json` and `plugins.json` automatically.
-4. **Test in AutaKimi**:
-   - Launch the AutaKimi Desktop App in development mode (`npm run dev:desktop`).
-   - Go to **Settings > Extensions** and add your local `dist/` directory (e.g., `D:\DEV\Apps\AutaKimi\autakimi-extensions\dist`).
-   - The app's `localFileInterceptor` will automatically intercept fetches to the remote GitHub repository and serve your newly built local files (including the `js/*.js` bundles) directly from your `dist/` folder!
-   - **IMPORTANT FOR NATIVE EXTENSIONS:** Native extensions (`.js` files) are cached in the app's internal database. If you make changes to a native extension, you **must** go to the Extensions page, click **Uninstall** on your extension, and then click **Install** again. This forces the app to fetch your newly built local `.js` file instead of using the cached code!
+3. In AutaKimi, navigate to **Settings** ➔ **Extensions** and point the repository to your local `dist/` directory or use `autakimi-local://`.
+4. When testing Native extensions (`.js` files), remember to **Uninstall** and **Re-install** the extension in the app to flush the local SQLite bytecode cache.
 
-### Automated Distribution (GitHub Actions)
+---
 
-You **do not need to commit the generated JSON files manually**! 
-1. Just commit your `src/` TS files and submit a **Pull Request**.
-2. Our **GitHub Actions CI** will validate your PR by building the files.
-3. Upon merging into the main branch, the GitHub Action automatically re-compiles the files and commits `templates.json` and `plugins.json` back to the repository.
+## 🤖 Continuous Integration & Distribution
 
-### Additional Guidelines
+This repository uses automated GitHub Actions:
 
-- **Icons**: Place icons in the `icons/` folder named as `{package_id}.png`.
+- **On Pull Request**:
+  - Validates TypeScript compilation and builds all bundles.
+  - Ensures linting and unit tests pass cleanly.
+- **On Push to `main`**:
+  - Automatically compiles all extensions via `esbuild`.
+  - Regenerates `manifest.json`, `dist/js/*.js`, and language-specific catalog indexes.
+  - Deploys changes directly to the distribution branch.
+
+---
 
 ## 🛡️ Legal Notice & Neutrality
-**AutaKimi** is a neutral media viewer framework. This repository is community-maintained and is intentionally decoupled from the core application source code. It does not host, provide, or link to any copyrighted media content.
+
+**AutaKimi** is a neutral, open-source media viewer framework. This repository is community-maintained and strictly decoupled from the core application source code. This project does not host, store, stream, or distribute any media files or copyrighted material. All scraping logic is executed on the client side at the user's explicit request.
 
 ---
+
 <p align="center">
-  Part of the <a href="https://github.com/Autakimi-Ecosystem">AutaKimi Ecosystem</a>
+  Maintained by the <b>AutaKimi Community</b> &bull; Part of the <a href="https://github.com/anasx07/AutaKimi">AutaKimi Ecosystem</a>
 </p>
