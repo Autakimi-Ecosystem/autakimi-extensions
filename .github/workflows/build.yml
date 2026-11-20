@@ -29,7 +29,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
@@ -56,8 +56,15 @@ jobs:
           
           if ! git diff --cached --quiet; then
             echo "Changes detected in compiled distribution files. Committing..."
-            git commit -m "chore(dist): auto-compile extensions to dist folder [skip ci]"
-            git push origin HEAD:${{ github.ref_name }} || echo "Skipping push: branch is protected or requires PR bypass."
+            # Disable hooks in CI so pre-commit hooks don't run on automated dist commits
+            HUSKY=0 git commit --no-verify -m "chore(dist): auto-compile extensions to dist folder [skip ci]" || true
+            set +e
+            git push origin HEAD:${{ github.ref_name }}
+            PUSH_STATUS=$?
+            set -e
+            if [ $PUSH_STATUS -ne 0 ]; then
+              echo "⚠️ Notice: Cannot push directly to protected branch '${{ github.ref_name }}'. Changes are preserved in the build artifact."
+            fi
           else
-            echo "No changes detected in compiled distribution files."
+            echo "✅ No changes detected in compiled distribution files."
           fi
