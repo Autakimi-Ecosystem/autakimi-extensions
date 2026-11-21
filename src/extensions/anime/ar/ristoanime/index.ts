@@ -10,8 +10,8 @@ export class RistoAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.ristoanime',
       'RistoAnime',
-      '0.0.1',
-      'https://ristoanime.co',
+      '0.0.2',
+      'https://ristoanime.cc',
       'ar',
       'ma.autakimi.extension.ar.ristoanime',
       false
@@ -54,8 +54,8 @@ export class RistoAnimeSource extends AnimeSource {
     const $ = cheerio.load(html)
     const manga: Manga[] = []
 
-    // Broad selector: MovieItem or any 'a' that contains an 'h4' (anime title)
-    $('.MovieItem a, a:has(h4), a:has(.title)').each((_, el) => {
+    // Broad selector: SlideItem, MovieItem or any 'a' that contains an 'h4' (anime title)
+    $('.SlideItem a, .MovieItem a, a:has(h4), a:has(.title)').each((_, el) => {
       const node = $(el)
       const href = node.attr('href') || ''
       if (
@@ -63,6 +63,7 @@ export class RistoAnimeSource extends AnimeSource {
         href.length < 5 ||
         href === this.baseUrl ||
         href === `${this.baseUrl}/` ||
+        node.closest('.RigtHeader, header, nav, .header').length > 0 ||
         href.includes('/genre/') ||
         href.includes('/year/') ||
         href.includes('/watch/')
@@ -94,9 +95,12 @@ export class RistoAnimeSource extends AnimeSource {
       if (!title || title.length < 2) return
 
       // Cover from any element with background-image style (usually div.poster)
+      // Checks both data-style (used in Latest updates) and style (used in Series list)
       let cover = ''
-      const coverElem = node.find('.poster, [style*="background-image"], .img').first()
-      const style = coverElem.attr('style') || ''
+      const coverElem = node
+        .find('.poster, [style*="background-image"], [data-style*="background-image"], .img')
+        .first()
+      const style = coverElem.attr('data-style') || coverElem.attr('style') || ''
       const bgMatch = style.match(/background-image:\s*url\((.*?)\)/)
       if (bgMatch) {
         cover = bgMatch[1]
@@ -107,7 +111,7 @@ export class RistoAnimeSource extends AnimeSource {
 
       if (!cover) {
         const img = node.find('img').first()
-        cover = img.attr('src') || img.attr('data-src') || ''
+        cover = img.attr('data-src') || img.attr('src') || ''
       }
 
       const status = node.find('.status, .type, .quality').first().text().trim()
@@ -404,7 +408,7 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.ristoanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.1',
+  version: '0.0.2',
   baseClass: 'Native',
   sources: [{ name: 'RistoAnime', id: '12345', baseUrl: 'https://ristoanime.cc' }]
 }
