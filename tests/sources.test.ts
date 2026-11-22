@@ -41,6 +41,20 @@ describe('Native Sources Integration Tests', () => {
     expect(details.coverUrl.length).toBeGreaterThan(0)
   }, 15000)
 
+  it('RistoAnimeSource - test specific anime URLs', async () => {
+    const source = new RistoAnimeSource()
+    const urls = [
+      'https://ristoanime.cc/%d8%a7%d9%86%d9%85%d9%8a-ao-ashi-%d8%a7%d9%84%d9%85%d9%88%d8%b3%d9%85-2-%d8%a7%d9%84%d8%ad%d9%84%d9%82%d8%a9-8-%d9%85%d8%aa%d8%b1%d8%ac%d9%85%d8%a9-%d8%a7%d9%88%d9%86-%d9%84%d8%a7%d9%8a%d9%86/',
+      'https://ristoanime.cc/series/karasu-wa-aruji/'
+    ]
+    for (const url of urls) {
+      const details = await source.fetchMangaDetails({ url, id: url, title: '', pkg: '' } as any)
+      expect(details.title).toBeTruthy()
+      expect(details.coverUrl).toBeTruthy()
+      expect(details.description).toBeTruthy()
+    }
+  }, 15000)
+
   it('ShahiidAnimeSource - fetchPopular should return manga', async () => {
     const source = new ShahiidAnimeSource()
     const result = await source.fetchPopular(1)
