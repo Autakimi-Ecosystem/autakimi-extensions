@@ -33,6 +33,12 @@ describe('Native Sources Integration Tests', () => {
     expect(firstManga.title).toBeDefined()
     expect(firstManga.url).toBeDefined()
     expect(firstManga.coverUrl).toBeDefined()
+
+    // Test fetchMangaDetails
+    const details = await source.fetchMangaDetails(firstManga)
+    expect(details.title).toBeDefined()
+    expect(details.coverUrl).toBeDefined()
+    expect(details.coverUrl.length).toBeGreaterThan(0)
   }, 15000)
 
   it('ShahiidAnimeSource - fetchPopular should return manga', async () => {
