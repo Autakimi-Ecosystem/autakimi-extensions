@@ -351,8 +351,8 @@ export const config = {
   lang: 'ar',
   type: 'anime',
   version: '0.0.2',
-  status: 'supported',
-  isFullySupported: true,
+  status: 'wip',
+  isFullySupported: false,
   baseClass: 'Native',
   sources: [{ name: 'WitAnime', id: 'witanime', baseUrl: 'https://witanime.site' }]
 }

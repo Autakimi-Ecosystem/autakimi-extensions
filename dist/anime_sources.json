@@ -38,8 +38,8 @@
       "icon": "autakimi-cache://local-icon/ma.autakimi.extension.ar.witanime.png",
       "nsfw": false,
       "language": "ar",
-      "status": "supported",
-      "isFullySupported": true
+      "status": "wip",
+      "isFullySupported": false
     }
   ]
 }

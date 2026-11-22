@@ -10,7 +10,7 @@ export class RistoAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.ristoanime',
       'RistoAnime',
-      '0.0.2',
+      '0.0.3',
       'https://ristoanime.cc',
       'ar',
       'ma.autakimi.extension.ar.ristoanime',
@@ -180,9 +180,42 @@ export class RistoAnimeSource extends AnimeSource {
         .trim()
     }
     title = title || manga.title
-    const description =
-      $('.StoryLine, .entry-content p, .anime-story, .description').text().trim() ||
-      $('.SeriesSide p').first().text().trim()
+
+    // Extract Cover
+    let coverUrl =
+      $('.Poster img, .InnerPoster img, img[src*="/uploads/"]').first().attr('src') ||
+      $('.Poster img, .InnerPoster img').first().attr('data-src') ||
+      ''
+
+    if (!coverUrl) {
+      const bgStyle = $('.BG, .Poster, [style*="background-image"]').first().attr('style') || ''
+      const m = bgStyle.match(/background-image:\s*url\((.*?)\)/)
+      if (m) {
+        coverUrl = m[1].replace(/['"&quot;]/g, '').trim()
+      }
+    }
+
+    if (!coverUrl) {
+      coverUrl = manga.coverUrl || ''
+    }
+
+    if (coverUrl.startsWith('/')) {
+      coverUrl = `${this.baseUrl}${coverUrl}`
+    }
+
+    // Extract Story
+    let description =
+      $('.StoryArea p, .StoryArea, .StoryLine, .entry-content p, .anime-story, .description')
+        .first()
+        .text()
+        .trim() ||
+      $('.SeriesSide p').first().text().trim() ||
+      manga.description ||
+      ''
+
+    if (description.startsWith('قصة العمل :') || description.startsWith('قصة العمل:')) {
+      description = description.replace(/^قصة العمل\s*:\s*/i, '').trim()
+    }
 
     const genres: string[] = []
     $('a[href*="/genre/"], .gen-links a').each((_, el) => {
@@ -191,7 +224,7 @@ export class RistoAnimeSource extends AnimeSource {
     })
 
     let status = manga.status
-    $('.SeriesSide li, .anime-info-right li').each((_, el) => {
+    $('.SeriesSide li, .anime-info-right li, li').each((_, el) => {
       const text = $(el).text()
       if (text.includes('الحالة')) {
         status = $(el).find('a, span').text().trim() || text.split(':').pop()?.trim() || status
@@ -202,6 +235,7 @@ export class RistoAnimeSource extends AnimeSource {
       ...manga,
       title,
       description,
+      coverUrl,
       genres,
       status: status || 'Unknown'
     }
@@ -408,7 +442,7 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.ristoanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.2',
+  version: '0.0.3',
   status: 'supported',
   isFullySupported: true,
   baseClass: 'Native',
