@@ -350,6 +350,8 @@
     "pkg": "ma.autakimi.extension.ar.mangasid",
     "lang": "ar",
     "version": "0.0.1",
+    "status": "supported",
+    "isFullySupported": true,
     "nsfw": 0,
     "baseClass": "Native",
     "sources": [

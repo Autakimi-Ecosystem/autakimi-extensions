@@ -55,7 +55,8 @@ export class MangaSid extends MadaraSource {
           coverUrl,
           url: `${this.baseUrl}/manga/${item.slug}`,
           status: item.status || 'Unknown',
-          description: item.description || item.description_preview || item.content || item.excerpt || ''
+          description:
+            item.description || item.description_preview || item.content || item.excerpt || ''
         }
       })
 
@@ -217,18 +218,20 @@ export class MangaSid extends MadaraSource {
 }
 
 export const config = {
-  "name": "MangaSid",
-  "pkg": "ma.autakimi.extension.ar.mangasid",
-  "lang": "ar",
-  "version": "0.0.1",
-  "nsfw": 0,
-  "baseClass": "Native",
-  "sources": [
+  name: 'MangaSid',
+  pkg: 'ma.autakimi.extension.ar.mangasid',
+  lang: 'ar',
+  version: '0.0.1',
+  status: 'supported',
+  isFullySupported: true,
+  nsfw: 0,
+  baseClass: 'Native',
+  sources: [
     {
-      "name": "مانجا سيد",
-      "lang": "ar",
-      "id": "7657007209499352345",
-      "baseUrl": "https://mangasid.com"
+      name: 'مانجا سيد',
+      lang: 'ar',
+      id: '7657007209499352345',
+      baseUrl: 'https://mangasid.com'
     }
   ]
-};
+}
