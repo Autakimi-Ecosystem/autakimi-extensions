@@ -409,6 +409,8 @@ export const config = {
   lang: 'ar',
   type: 'anime',
   version: '0.0.2',
+  status: 'supported',
+  isFullySupported: true,
   baseClass: 'Native',
   sources: [{ name: 'RistoAnime', id: '12345', baseUrl: 'https://ristoanime.cc' }]
 }

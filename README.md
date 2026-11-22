@@ -70,10 +70,10 @@ Native anime extensions extend `AnimeSource` and provide robust web scraping for
 - **Direct Stream Extraction**: Extracts direct MP4/HLS streams from popular hosting providers (VOE, Uqload, VidMoly, StreamRuby, MixDrop) with automatic fallback.
 - **Embedded Player Support**: Fallback to sandboxed webview embeds when direct streams require specialized decryption.
 - **Built-in Sources**:
-  - `ma.autakimi.extension.ar.anime4up`
-  - `ma.autakimi.extension.ar.witanime`
-  - `ma.autakimi.extension.ar.ristoanime`
-  - `ma.autakimi.extension.ar.shahiidanime`
+  - `ma.autakimi.extension.ar.ristoanime` (✅ Active / Fully Supported)
+  - `ma.autakimi.extension.ar.witanime` (⏳ In Development)
+  - `ma.autakimi.extension.ar.anime4up` (⏳ In Development)
+  - `ma.autakimi.extension.ar.shahiidanime` (⏳ In Development)
 
 ### 2. 📖 Manga Extensions (Templates & Native)
 
