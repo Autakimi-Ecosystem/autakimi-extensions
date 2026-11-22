@@ -425,6 +425,8 @@ export const config = {
   lang: 'ar',
   type: 'anime',
   version: '0.0.1',
+  status: 'wip',
+  disabled: true,
   baseClass: 'Native',
   sources: [{ name: 'Shahiid Anime', id: '67890', baseUrl: 'https://shahiid-anime.net' }]
 }

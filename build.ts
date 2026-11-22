@@ -190,6 +190,11 @@ async function buildExtensionsAndCatalogs() {
             continue
           }
 
+          if (config.disabled === true || config.status === 'wip' || config.status === 'draft') {
+            console.log(`  - Skipping disabled/WIP extension: ${config.pkg || config.name}`)
+            continue
+          }
+
           const id = config.pkg
 
           const sourceObj = {

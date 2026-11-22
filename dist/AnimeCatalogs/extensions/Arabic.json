@@ -1,61 +1,18 @@
 [
   {
-    "name": "Anime4Up",
-    "pkg": "ma.autakimi.extension.ar.anime4up",
-    "lang": "ar",
-    "type": "anime",
-    "version": "0.0.1",
-    "baseClass": "Native",
-    "sources": [
-      {
-        "name": "Anime4Up",
-        "id": "anime4up",
-        "baseUrl": "https://anime4up.quest"
-      }
-    ]
-  },
-  {
     "name": "RistoAnime",
     "pkg": "ma.autakimi.extension.ar.ristoanime",
     "lang": "ar",
     "type": "anime",
     "version": "0.0.2",
+    "status": "supported",
+    "isFullySupported": true,
     "baseClass": "Native",
     "sources": [
       {
         "name": "RistoAnime",
         "id": "12345",
         "baseUrl": "https://ristoanime.cc"
-      }
-    ]
-  },
-  {
-    "name": "ShahiidAnime",
-    "pkg": "ma.autakimi.extension.ar.shahiidanime",
-    "lang": "ar",
-    "type": "anime",
-    "version": "0.0.1",
-    "baseClass": "Native",
-    "sources": [
-      {
-        "name": "Shahiid Anime",
-        "id": "67890",
-        "baseUrl": "https://shahiid-anime.net"
-      }
-    ]
-  },
-  {
-    "name": "WitAnime",
-    "pkg": "ma.autakimi.extension.ar.witanime",
-    "lang": "ar",
-    "type": "anime",
-    "version": "0.0.1",
-    "baseClass": "Native",
-    "sources": [
-      {
-        "name": "WitAnime",
-        "id": "witanime",
-        "baseUrl": "https://witanime.site"
       }
     ]
   }
