@@ -190,8 +190,8 @@ async function buildExtensionsAndCatalogs() {
             continue
           }
 
-          if (config.disabled === true || config.status === 'wip' || config.status === 'draft') {
-            console.log(`  - Skipping disabled/WIP extension: ${config.pkg || config.name}`)
+          if (config.disabled === true) {
+            console.log(`  - Skipping disabled extension: ${config.pkg || config.name}`)
             continue
           }
 
@@ -204,7 +204,9 @@ async function buildExtensionsAndCatalogs() {
             templateId: config.templateId || undefined,
             icon: `autakimi-cache://local-icon/${config.pkg}.png`,
             nsfw: config.nsfw === 1 || config.nsfw === true,
-            language: config.lang || 'all'
+            language: config.lang || 'all',
+            status: config.status,
+            isFullySupported: config.isFullySupported === true
           }
 
           const catalogEntry = config

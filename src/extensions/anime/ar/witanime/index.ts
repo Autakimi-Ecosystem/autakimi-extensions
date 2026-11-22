@@ -240,7 +240,7 @@ export const config = {
   type: 'anime',
   version: '0.0.1',
   status: 'wip',
-  disabled: true,
+  isFullySupported: false,
   baseClass: 'Native',
   sources: [{ name: 'WitAnime', id: 'witanime', baseUrl: 'https://witanime.site' }]
 }

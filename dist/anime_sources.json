@@ -2,12 +2,44 @@
   "version": "1.0.6",
   "anime_sources": [
     {
+      "id": "ma.autakimi.extension.ar.anime4up",
+      "name": "Anime4Up",
+      "url": "https://anime4up.quest",
+      "icon": "autakimi-cache://local-icon/ma.autakimi.extension.ar.anime4up.png",
+      "nsfw": false,
+      "language": "ar",
+      "status": "wip",
+      "isFullySupported": false
+    },
+    {
       "id": "ma.autakimi.extension.ar.ristoanime",
       "name": "RistoAnime",
       "url": "https://ristoanime.cc",
       "icon": "autakimi-cache://local-icon/ma.autakimi.extension.ar.ristoanime.png",
       "nsfw": false,
-      "language": "ar"
+      "language": "ar",
+      "status": "supported",
+      "isFullySupported": true
+    },
+    {
+      "id": "ma.autakimi.extension.ar.shahiidanime",
+      "name": "ShahiidAnime",
+      "url": "https://shahiid-anime.net",
+      "icon": "autakimi-cache://local-icon/ma.autakimi.extension.ar.shahiidanime.png",
+      "nsfw": false,
+      "language": "ar",
+      "status": "wip",
+      "isFullySupported": false
+    },
+    {
+      "id": "ma.autakimi.extension.ar.witanime",
+      "name": "WitAnime",
+      "url": "https://witanime.site",
+      "icon": "autakimi-cache://local-icon/ma.autakimi.extension.ar.witanime.png",
+      "nsfw": false,
+      "language": "ar",
+      "status": "wip",
+      "isFullySupported": false
     }
   ]
 }
