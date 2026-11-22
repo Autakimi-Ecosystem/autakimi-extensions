@@ -10,7 +10,7 @@ export class WitAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.witanime',
       'WitAnime',
-      '0.0.1',
+      '0.0.2',
       'https://witanime.site',
       'ar',
       'ma.autakimi.extension.ar.witanime',
@@ -196,37 +196,149 @@ export class WitAnimeSource extends AnimeSource {
   async fetchPages(episodeUrl: string): Promise<StreamingServer[]> {
     const html = await this.fetchHtml(episodeUrl)
     const servers: StreamingServer[] = []
+    const seenUrls = new Set<string>()
 
-    if (html) {
-      const $ = cheerio.load(html)
-      const seenUrls = new Set<string>()
-
-      // 1. Check iframes
-      $('iframe').each((_, el) => {
-        let src = $(el).attr('src') || ''
-        if (src) {
-          if (src.startsWith('//')) src = `https:${src}`
-          else if (src.startsWith('/')) src = `${this.baseUrl}${src}`
-          if (!seenUrls.has(src)) {
-            seenUrls.add(src)
-            servers.push({ name: 'Default Player', url: src })
-          }
-        }
-      })
-
-      // 2. Check embed links
-      $('[data-url], [data-embed], a[href*="embed"]').each((_, el) => {
-        const src = $(el).attr('data-url') || $(el).attr('data-embed') || $(el).attr('href') || ''
-        if (src && src.startsWith('http') && !seenUrls.has(src)) {
-          seenUrls.add(src)
-          servers.push({ name: $(el).text().trim() || 'Stream Player', url: src })
-        }
-      })
+    const isAdUrl = (u: string): boolean => {
+      if (!u) return true
+      return /a-ads\.com|googleads|doubleclick|popads|propeller|adnxs|adsterra/i.test(u)
     }
 
-    // Always include the full webview player as primary or fallback
+    if (html) {
+      // 1. Extract CSRF token and dynamic sourcesUrl
+      const csrfMatch = html.match(/name="csrf-token"\s+content="([^"]+)"/)
+      const csrf = csrfMatch ? csrfMatch[1] : ''
+
+      let sourcesPath: string
+      const sourcesUrlMatch = html.match(/sourcesUrl:\s*['"]([^'"]+)['"]/)
+      if (sourcesUrlMatch) {
+        sourcesPath = sourcesUrlMatch[1].replace(/\\/g, '')
+      } else {
+        const cleanEpUrl = episodeUrl.split('?')[0].replace(/\/+$/, '')
+        sourcesPath = `${cleanEpUrl.replace(this.baseUrl, '')}/sources`
+      }
+
+      const fullSourcesUrl = sourcesPath.startsWith('http')
+        ? sourcesPath
+        : `${this.baseUrl}${sourcesPath}`
+
+      // 2. Query dynamic sources endpoint
+      try {
+        const sourcesJsonStr = await this.fetchHtml(fullSourcesUrl, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': csrf,
+            Referer: episodeUrl
+          },
+          silent: true
+        })
+
+        if (sourcesJsonStr && sourcesJsonStr.trim().startsWith('{')) {
+          const data = JSON.parse(sourcesJsonStr)
+          const players = data.players || {}
+          const qualityOrder = ['FHD', 'HD', 'SD', '4K']
+          const qualities = Object.keys(players).sort((a, b) => {
+            const ia = qualityOrder.indexOf(a)
+            const ib = qualityOrder.indexOf(b)
+            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+          })
+
+          for (const q of qualities) {
+            const list = players[q] || []
+            for (const p of list) {
+              if (!p.token) continue
+              const label = (p.label || 'Player').trim()
+              const gateUrl = `${this.baseUrl}/watch/stream-gate/${p.token}`
+
+              let targetUrl = gateUrl
+              let targetType: 'hls' | 'mp4' | 'embed' = 'embed'
+              let targetHeaders: Record<string, string> | undefined = undefined
+
+              // Activate token via stream-source and probe gate redirect
+              try {
+                await this.fetchHtml(`${this.baseUrl}/watch/stream-source/${p.token}`, {
+                  method: 'POST',
+                  headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    Referer: episodeUrl
+                  },
+                  silent: true
+                })
+
+                const gateRes = await fetch(gateUrl, {
+                  method: 'GET',
+                  headers: {
+                    Referer: episodeUrl,
+                    'User-Agent':
+                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+                  },
+                  redirect: 'manual'
+                } as any)
+
+                const loc = gateRes.headers.get('location')
+                if (loc && loc.startsWith('http') && !isAdUrl(loc)) {
+                  targetUrl = loc
+                  // Attempt resolving direct video stream (.mp4 / .m3u8) for native playback
+                  const direct = await this.resolveDirectStream(loc)
+                  if (direct) {
+                    targetUrl = direct.url
+                    targetType = direct.type
+                    targetHeaders = direct.headers
+                  }
+                }
+              } catch {
+                // If direct resolution fails, keep gateUrl as embed target
+              }
+
+              if (!seenUrls.has(targetUrl)) {
+                seenUrls.add(targetUrl)
+                servers.push({
+                  name: `[${q}] ${label.toUpperCase()}${targetType !== 'embed' ? ' ⚡ Direct' : ''}`,
+                  url: targetUrl,
+                  type: targetType,
+                  headers: targetHeaders || { Referer: episodeUrl }
+                })
+              }
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[WitAnime] Dynamic sources resolution failed: ${err.message}`)
+      }
+
+      // 3. Fallback: Parse static iframes if dynamic endpoint yielded 0 servers
+      if (servers.length === 0) {
+        const $ = cheerio.load(html)
+        $('iframe').each((_, el) => {
+          let src = $(el).attr('src') || ''
+          if (src) {
+            if (src.startsWith('//')) src = `https:${src}`
+            else if (src.startsWith('/')) src = `${this.baseUrl}${src}`
+            if (!isAdUrl(src) && !seenUrls.has(src)) {
+              seenUrls.add(src)
+              servers.push({ name: 'Default Player', url: src, type: 'embed' })
+            }
+          }
+        })
+
+        $('[data-url], [data-embed], a[href*="embed"]').each((_, el) => {
+          const src = $(el).attr('data-url') || $(el).attr('data-embed') || $(el).attr('href') || ''
+          if (src && src.startsWith('http') && !isAdUrl(src) && !seenUrls.has(src)) {
+            seenUrls.add(src)
+            servers.push({
+              name: $(el).text().trim() || 'Stream Player',
+              url: src,
+              type: 'embed'
+            })
+          }
+        })
+      }
+    }
+
+    // 4. Ultimate fallback: include WitAnime episode URL as clean webview player
     if (servers.length === 0) {
-      servers.push({ name: 'WitAnime Player', url: episodeUrl })
+      servers.push({ name: 'WitAnime Web Player', url: episodeUrl, type: 'embed' })
     }
 
     return servers
@@ -238,9 +350,9 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.witanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.1',
-  status: 'wip',
-  isFullySupported: false,
+  version: '0.0.2',
+  status: 'supported',
+  isFullySupported: true,
   baseClass: 'Native',
   sources: [{ name: 'WitAnime', id: 'witanime', baseUrl: 'https://witanime.site' }]
 }

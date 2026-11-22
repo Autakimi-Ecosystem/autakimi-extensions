@@ -55,9 +55,9 @@
     "pkg": "ma.autakimi.extension.ar.witanime",
     "lang": "ar",
     "type": "anime",
-    "version": "0.0.1",
-    "status": "wip",
-    "isFullySupported": false,
+    "version": "0.0.2",
+    "status": "supported",
+    "isFullySupported": true,
     "baseClass": "Native",
     "sources": [
       {
