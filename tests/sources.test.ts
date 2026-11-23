@@ -72,6 +72,16 @@ describe('Native Sources Integration Tests', () => {
     expect(firstManga.coverUrl).toBeDefined()
   }, 15000)
 
+  it('ShahiidAnimeSource - fetchChapters should return episodes for Bass X Machina', async () => {
+    const source = new ShahiidAnimeSource()
+    const chapters = await source.fetchChapters('https://shahiid-anime.net/series/bass-x-machina/')
+    expect(chapters).toBeInstanceOf(Array)
+    expect(chapters.length).toBe(6)
+    expect(chapters[0].title).toBeDefined()
+    expect(chapters[0].url).toContain('bass-x-machina')
+    expect(chapters[0].number).toBe(1)
+  }, 20000)
+
   it('WitAnimeSource - should initialize and have correct configuration', () => {
     const source = new WitAnimeSource()
     expect(source.id).toBe('ma.autakimi.extension.ar.witanime')

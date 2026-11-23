@@ -1,6 +1,6 @@
 {
   "name": "autakimi-extensions",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "AutaKimi Community Extensions and Plugins",
   "scripts": {
     "build": "tsx build.ts",

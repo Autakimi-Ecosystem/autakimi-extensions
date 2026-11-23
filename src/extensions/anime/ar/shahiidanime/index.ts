@@ -1,12 +1,12 @@
 import { AnimeSource } from '../../../../base/AnimeSource'
-import { Manga, MangaPage, Chapter } from '../types'
+import { Manga, MangaPage, Chapter, StreamingServer } from '../../../../types'
 import * as cheerio from 'cheerio'
 
 /**
  * ShahiidAnime source adapter for https://shahiid-anime.net/
  *
  * Site structure:
- *   Series list   → /series/page/{n}/     (grid of anime with .listupd .bs cards)
+ *   Series list   → /series/page/{n}/     (grid of anime with .one-poster cards)
  *   Series detail → /series/{slug}/        (cover, description, genres, season links)
  *   Season detail → /seasons/{slug}/       (list of episodes for a season)
  *   Episode page  → /episodes/{slug}/      (iframe-based video player)
@@ -18,7 +18,7 @@ export class ShahiidAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.shahiidanime',
       'Shahiid Anime',
-      '0.0.1',
+      '0.0.2',
       'https://shahiid-anime.net',
       'ar',
       'ma.autakimi.extension.ar.shahiidanime',
@@ -29,17 +29,14 @@ export class ShahiidAnimeSource extends AnimeSource {
   // ─── Lists ───────────────────────────────────────────────────────────────────
 
   async fetchPopular(page: number): Promise<MangaPage> {
-    // The site's /series/ page sorts by popularity by default
     const url = `${this.baseUrl}/series/page/${page}/`
     return this._parseAnimeList(url)
   }
 
   async fetchLatest(page: number): Promise<MangaPage> {
-    // Latest episodes added section
     const url = `${this.baseUrl}/series/page/${page}/?order=latest`
     const result = await this._parseAnimeList(url)
     if (result.manga.length === 0) {
-      // Fallback: same as popular if no order param
       return this._parseAnimeList(`${this.baseUrl}/series/page/${page}/`)
     }
     return result
@@ -58,7 +55,6 @@ export class ShahiidAnimeSource extends AnimeSource {
     const $ = cheerio.load(html)
     const manga: Manga[] = []
 
-    // Primary: .one-poster (Custom theme), .listupd .bs (Madara fallback), .box-item
     $('.one-poster, .listupd .bs, .listupd .bsx, article.box-item, .item.anime, .item.series').each(
       (_, el) => {
         const node = $(el)
@@ -66,7 +62,6 @@ export class ShahiidAnimeSource extends AnimeSource {
         const href = a.attr('href')
         if (!href) return
 
-        // Resolve to absolute URL
         const seriesUrl = href.startsWith('http') ? href : `${this.baseUrl}${href}`
         const title = (
           node.find('h2 a, .tt, .title, a[title], h3').first().text().trim() ||
@@ -79,7 +74,6 @@ export class ShahiidAnimeSource extends AnimeSource {
         const cover =
           imgEl.attr('src') || imgEl.attr('data-src') || imgEl.attr('data-lazy-src') || ''
 
-        // Type badge or Rating
         const typeBadge = (
           node
             .find('.typez, .type, span.Type, .rated-poster, .status-poster')
@@ -104,7 +98,6 @@ export class ShahiidAnimeSource extends AnimeSource {
       }
     )
 
-    // Detect next page
     const hasNextPage =
       $('.nextpostslink, a.next, .next.page-numbers, .nav-next a').length > 0 ||
       (manga.length > 0 && $('.pages .current').length > 0)
@@ -120,23 +113,19 @@ export class ShahiidAnimeSource extends AnimeSource {
 
     const $ = cheerio.load(html)
 
-    // Title
     const title =
       $('h1.entry-title, h1.seriestitle, .head-info h1, h1').first().text().trim() || manga.title
 
-    // Cover — prefer the large image in series header
     let coverUrl = manga.coverUrl
     const coverImg = $('.head-post img, .thumb img, .seriesthumbnail img').first()
     const newCover = coverImg.attr('src') || coverImg.attr('data-src') || ''
     if (newCover) coverUrl = newCover
 
-    // Description
     const description =
       $('.entry-content p, .desc p, .synops p, .SeriesInfo p').first().text().trim() ||
       $('.entry-content, .desc, .synops').first().text().trim() ||
       ''
 
-    // Genres
     const genres: string[] = []
     $('a[href*="/series-cats/"], a[href*="/genre/"], .gen-links a, .seriestugenre a').each(
       (_, el) => {
@@ -145,7 +134,6 @@ export class ShahiidAnimeSource extends AnimeSource {
       }
     )
 
-    // Status
     let status = manga.status || ''
     $('div, span').each((_, el) => {
       const text = $(el).text()
@@ -170,12 +158,7 @@ export class ShahiidAnimeSource extends AnimeSource {
   // ─── Episodes (Chapters) ─────────────────────────────────────────────────────
 
   /**
-   * fetches all episodes across all seasons for the given series URL.
-   * Strategy:
-   *   1. Extract Series ID (Post ID) from body class.
-   *   2. Search for season links on the series page.
-   *   3. If no season found, try fallback aggregator URL (?serie=ID).
-   *   4. Flatten all episodes from all seasons.
+   * Fetches all episodes across all seasons for the given series URL.
    */
   async fetchChapters(mangaUrl: string): Promise<Chapter[]> {
     const html = await this.fetchHtml(mangaUrl)
@@ -184,67 +167,68 @@ export class ShahiidAnimeSource extends AnimeSource {
     const $ = cheerio.load(html)
     const allChapters: Chapter[] = []
 
-    // ── 1. Extract Series ID (Post ID) ──
-    const bodyClass = $('body').attr('class') || ''
-    const postIdMatch = bodyClass.match(/postid-(\d+)/)
-    const seriesId = postIdMatch ? postIdMatch[1] : null
+    // 1. Direct episode links on page
+    const directLinks: string[] = []
+    $('a[href*="/episodes/"], a[href*="/episodesDubbed/"]').each((_, el) => {
+      const href = $(el).attr('href') || ''
+      if (href && !directLinks.includes(href)) directLinks.push(href)
+    })
 
-    // ── 2. Collect season links from the series page ──
+    // 2. Season links
     const seasonUrls: string[] = []
-
-    // Try to find season links on the series page
     $(`a[href*="/seasons/"], 
        .seasons-list a, 
        .mseason a, 
        .series-seasons a,
        a:contains("الموسم")`).each((_, el) => {
-      const href = $(el).attr('href') || ''
+      let href = $(el).attr('href') || ''
       if (!href) return
-      const seasonUrl = href.startsWith('http') ? href : `${this.baseUrl}${href}`
+      if (href.startsWith('/')) href = `${this.baseUrl}${href}`
 
-      // Filter out utility links like ?serie= or search links
-      if (seasonUrl.includes('?serie=') || seasonUrl.includes('?s=')) return
-
-      if (!seasonUrls.includes(seasonUrl)) seasonUrls.push(seasonUrl)
-    })
-
-    // ── 3. Fallback: If no season links found but we have a seriesId, try the aggregator URL ──
-    if (seasonUrls.length === 0 && seriesId) {
-      const aggregatorUrl = `${this.baseUrl}/seasons/?serie=${seriesId}`
-      const aggregatorHtml = await this.fetchHtml(aggregatorUrl)
-      if (aggregatorHtml) {
-        const $agg = cheerio.load(aggregatorHtml)
-        $agg('a[href*="/seasons/"], .listupd a, .bs a').each((_, el) => {
-          const href = $agg(el).attr('href') || ''
-          if (!href) return
-          const seasonUrl = href.startsWith('http') ? href : `${this.baseUrl}${href}`
-          if (!seasonUrls.includes(seasonUrl)) seasonUrls.push(seasonUrl)
-        })
-      }
-    }
-
-    // ── 4. Direct Episode Search (if no seasons or as a secondary check) ──
-    const directEpisodeLinks: string[] = []
-    $(`a[href*="/episodes/"], 
-       a[href*="/episodesDubbed/"],
-       .episodelist a,
-       .eplister a`).each((_, el) => {
-      const href = $(el).attr('href') || ''
+      // Filter out utility links like ?serie=, search, report, or anchor links
       if (
-        href &&
-        !directEpisodeLinks.includes(href) &&
-        (href.includes('/episodes/') || href.includes('/episodesDubbed/'))
+        href.includes('?serie=') ||
+        href.includes('?s=') ||
+        href.includes('rapport') ||
+        href.includes('تبليغ') ||
+        href.includes('#')
       ) {
-        directEpisodeLinks.push(href)
+        return
       }
+
+      if (!seasonUrls.includes(href)) seasonUrls.push(href)
     })
 
-    if (seasonUrls.length === 0 && directEpisodeLinks.length === 0) {
-      console.warn(`[ShahiidAnime] No seasons or episodes found at ${mangaUrl} (ID: ${seriesId})`)
-      return []
+    // 3. Fallback: If no season links found, try body post ID aggregator URL
+    if (seasonUrls.length === 0 && directLinks.length === 0) {
+      const bodyClass = $('body').attr('class') || ''
+      const postIdMatch = bodyClass.match(/postid-(\d+)/) || html.match(/postid-(\d+)/)
+      const seriesId = postIdMatch ? postIdMatch[1] : null
+      if (seriesId) {
+        const aggregatorUrl = `${this.baseUrl}/seasons/?serie=${seriesId}`
+        const aggregatorHtml = await this.fetchHtml(aggregatorUrl)
+        if (aggregatorHtml) {
+          const $agg = cheerio.load(aggregatorHtml)
+          $agg('a[href*="/seasons/"], .listupd a, .bs a').each((_, el) => {
+            let href = $agg(el).attr('href') || ''
+            if (!href) return
+            if (href.startsWith('/')) href = `${this.baseUrl}${href}`
+            if (
+              !href.includes('?serie=') &&
+              !href.includes('?s=') &&
+              !href.includes('rapport') &&
+              !href.includes('تبليغ') &&
+              !href.includes('#') &&
+              !seasonUrls.includes(href)
+            ) {
+              seasonUrls.push(href)
+            }
+          })
+        }
+      }
     }
 
-    // ── 5. Fetch episodes from each season ──
+    // 4. Fetch episodes from each season
     if (seasonUrls.length > 0) {
       let globalIndex = 0
       for (const seasonUrl of seasonUrls) {
@@ -252,27 +236,15 @@ export class ShahiidAnimeSource extends AnimeSource {
         globalIndex += seasonChapters.length
         allChapters.push(...seasonChapters)
       }
+    } else if (directLinks.length > 0) {
+      // Episodes are directly on the initial page
+      const chapters = await this._fetchSeasonEpisodes(mangaUrl, 0)
+      allChapters.push(...chapters)
     }
 
-    // ── 6. Fallback to direct links if seasons yielded nothing ──
-    if (allChapters.length === 0 && directEpisodeLinks.length > 0) {
-      directEpisodeLinks.forEach((href, i) => {
-        const epUrl = href.startsWith('http') ? href : `${this.baseUrl}${href}`
-        const titleEl = $(`a[href="${href}"]`).first()
-        const title = titleEl.attr('title') || titleEl.text().trim() || `Episode ${i + 1}`
-        const numStr = title.match(/\d+/)?.[0] || String(i + 1)
-        allChapters.push({
-          id: epUrl,
-          title,
-          url: epUrl,
-          number: parseFloat(numStr) || i + 1
-        })
-      })
-    }
-
-    // Final deduplication and sort
-    const finalChapters = Array.from(new Map(allChapters.map((c) => [c.id, c])).values())
-    finalChapters.sort((a, b) => b.number - a.number) // Default to Newest first
+    // Deduplicate and sort chronologically ascending
+    const finalChapters = Array.from(new Map(allChapters.map((c) => [c.url, c])).values())
+    finalChapters.sort((a, b) => a.number - b.number)
     return finalChapters
   }
 
@@ -281,141 +253,155 @@ export class ShahiidAnimeSource extends AnimeSource {
     if (!html) return []
 
     const $ = cheerio.load(html)
-    const chapters: Chapter[] = []
-
-    // Season title for labeling episodes
     const seasonTitle = $('h1.entry-title, h1.seriestitle, h1').first().text().trim()
+    const epsMap = new Map<string, { href: string; text: string; num: number; date?: string }>()
 
-    // Episode rows on season page
-    // Common selectors for this WordPress theme
-    $(`.episodelist a,
-       .eplister a,
-       .epAll a,
-       .listupd a,
-       .bs a,
-       li a[href*="/episodes/"],
-       li a[href*="/episodesDubbed/"],
-       .episodelist-series a`).each((i, el) => {
-      const href = $(el).attr('href') || ''
-      if (!href || (!href.includes('/episodes/') && !href.includes('/episodesDubbed/'))) return
+    $('a[href*="/episodes/"], a[href*="/episodesDubbed/"]').each((i, el) => {
+      let href = $(el).attr('href') || ''
+      if (!href) return
+      if (href.startsWith('/')) href = `${this.baseUrl}${href}`
 
-      // Skip duplicate links (download vs watch)
-      if ($(el).hasClass('dlBtn') || $(el).text().includes('تحميل')) return
+      if ($(el).hasClass('dlBtn') || href.includes('?download=')) return
 
-      const epUrl = href.startsWith('http') ? href : `${this.baseUrl}${href}`
+      const rawText = $(el).text().trim().replace(/\s+/g, ' ')
+      const titleAttr = $(el).attr('title')?.trim() || ''
+      const text = titleAttr || rawText
 
-      // Episode title: try title attribute, then text, then generate
-      const rawTitle =
-        $(el).attr('title') ||
-        $(el).find('.epl-title, .epl-num').text().trim() ||
-        $(el).text().trim() ||
-        ''
-
-      // Try to extract episode number from title or URL slug
-      const urlSlug = href.split('/').filter(Boolean).pop() || ''
       const numMatch =
-        rawTitle.match(/(?:الحلقة|حلقة|ep|episode)\s*(\d+)/i) ||
-        rawTitle.match(/(\d+)/) ||
-        urlSlug.match(/(\d+)/)
+        text.match(/(?:الحلقة|حلقة|ep|episode)\s*(\d+(?:\.\d+)?)/i) ||
+        href.match(/(?:ep-|episode-)(\d+(?:\.\d+)?)/i) ||
+        decodeURIComponent(href).match(/الحلقة-(\d+(?:\.\d+)?)/i) ||
+        text.match(/(\d+(?:\.\d+)?)/)
+
       const num = numMatch ? parseFloat(numMatch[1]) : startIndex + i + 1
 
-      // Include season name in title for clarity
-      const title = rawTitle || (seasonTitle ? `${seasonTitle} - الحلقة ${num}` : `Episode ${num}`)
-
-      // Date
       const dateStr = $(el)
-        .closest('li, article, .epRow')
+        .closest('li, article, .epRow, div, p')
         .find('.date, .epl-date, time')
         .text()
         .trim()
 
-      if (!chapters.find((c) => c.url === epUrl)) {
-        chapters.push({
-          id: epUrl,
-          title,
-          url: epUrl,
-          number: num,
-          date: dateStr || undefined
-        })
+      if (!epsMap.has(href)) {
+        epsMap.set(href, { href, text, num, date: dateStr || undefined })
+      } else {
+        const existing = epsMap.get(href)!
+        if (text.includes('الحلقة') && !existing.text.includes('الحلقة')) {
+          existing.text = text
+        } else if (text.length > existing.text.length && !text.includes('مشاهدة')) {
+          existing.text = text
+        }
       }
     })
 
-    // Sort by episode number ascending
+    const chapters: Chapter[] = []
+    let idx = startIndex
+    for (const [epUrl, epData] of epsMap.entries()) {
+      idx++
+      const num = isNaN(epData.num) ? idx : epData.num
+      let title = epData.text
+      if (!title || title === 'مشاهدة الحلقة' || title === 'تحميل الحلقة') {
+        title = seasonTitle ? `${seasonTitle} - الحلقة ${num}` : `الحلقة ${num}`
+      }
+      chapters.push({
+        id: epUrl,
+        title,
+        url: epUrl,
+        number: num,
+        date: epData.date
+      })
+    }
+
     chapters.sort((a, b) => a.number - b.number)
     return chapters
   }
 
-  // ─── Episode Streaming URLs ───────────────────────────────────────────────────
+  // ─── Video Players / Streaming Servers ───────────────────────────────────────
 
-  /**
-   * Returns iframe/streaming URLs from the episode page.
-   * The AnimePage will open the first URL in the internal browser.
-   */
-  async fetchPages(episodeUrl: string): Promise<any> {
+  async fetchPages(episodeUrl: string): Promise<StreamingServer[]> {
     const html = await this.fetchHtml(episodeUrl)
-
-    const debugInfo = {
-      url: episodeUrl,
-      htmlLength: html?.length || 0,
-      isBlocked: this.isCfChallengePage(html),
-      snippet: html ? html.substring(0, 500) : 'EMPTY'
-    }
-
-    if (!html) {
-      return { urls: [episodeUrl], debug: debugInfo }
-    }
+    if (!html) return [{ name: 'Web View Player', url: episodeUrl }]
 
     const $ = cheerio.load(html)
-    const streamUrls: string[] = []
+    const servers: StreamingServer[] = []
+    const seenUrls = new Set<string>()
 
-    // Primary: find iframes inside the player containers
-    const playerSelectors = [
-      '#player iframe',
-      '.player iframe',
-      '.video-content iframe',
-      '.video-embed iframe',
-      '.entry-content iframe',
-      'div[class*="player"] iframe',
-      'div[class*="embed"] iframe',
-      'iframe[src*="shahiid"]',
-      'iframe[src*="mega"],iframe[src*="stream"],iframe[src*="embed"]',
-      'iframe'
-    ]
+    const addServer = (name: string, streamUrl: string) => {
+      let sUrl = (streamUrl || '').trim()
+      if (!sUrl) return
+      if (sUrl.startsWith('//')) sUrl = `https:${sUrl}`
+      else if (sUrl.startsWith('/')) sUrl = `${this.baseUrl}${sUrl}`
 
-    for (const sel of playerSelectors) {
-      $(sel).each((_, el) => {
-        const src = $(el).attr('src') || $(el).attr('data-src') || ''
-        if (src && src.startsWith('http') && !streamUrls.includes(src)) {
-          streamUrls.push(src)
+      if (
+        !seenUrls.has(sUrl) &&
+        sUrl.startsWith('http') &&
+        !sUrl.includes('facebook') &&
+        !sUrl.includes('twitter') &&
+        !sUrl.includes('instagram') &&
+        !sUrl.includes('youtube') &&
+        !sUrl.includes('t.me')
+      ) {
+        seenUrls.add(sUrl)
+        servers.push({ name, url: sUrl })
+      }
+    }
+
+    // 1. Primary iframes in player containers
+    $(
+      'div#services-cntn-ajax iframe, .movies-servers iframe, #player iframe, .player iframe, iframe'
+    ).each((_, el) => {
+      const src = $(el).attr('src') || $(el).attr('data-src') || ''
+      if (src) addServer('Default Player', src)
+    })
+
+    // 2. Download page if available
+    const downloadLink = $('a[href*="?download="]').first().attr('href')
+    if (downloadLink) {
+      try {
+        const dUrl = downloadLink.startsWith('/') ? `${this.baseUrl}${downloadLink}` : downloadLink
+        const dHtml = await this.fetchHtml(dUrl)
+        if (dHtml) {
+          const $d = cheerio.load(dHtml)
+          $d('a').each((_, el) => {
+            const href = $d(el).attr('href') || ''
+            const text = $d(el).text().trim().replace(/\s+/g, ' ')
+            if (href.startsWith('http') && !href.includes('shahiid-anime.net')) {
+              addServer(text || 'Download Server', href)
+            }
+          })
         }
-      })
-      if (streamUrls.length > 0) break
+      } catch {}
     }
 
-    // Fallback: look for server tab buttons that hold the embed URL
-    if (streamUrls.length === 0) {
-      $('.buttosn, .ServerAll a, .ServerLinksTop a, [data-src], [data-embed]').each((_, el) => {
-        const src = (
-          $(el).attr('data-src') ||
-          $(el).attr('data-embed') ||
-          $(el).attr('href') ||
-          ''
-        ).trim()
-        if (src && src.startsWith('http') && !streamUrls.includes(src)) {
-          streamUrls.push(src)
-        }
-      })
+    // Fallback: episode page URL itself for webview
+    if (servers.length === 0) {
+      servers.push({ name: 'Web View Player', url: episodeUrl })
     }
 
-    // Last resort: return the episode page URL itself for the internal browser to handle
-    if (streamUrls.length === 0) {
-      streamUrls.push(episodeUrl)
+    const enhancedServers: StreamingServer[] = []
+    for (const s of servers) {
+      const direct = await this.resolveDirectStream(s.url)
+      if (direct) {
+        enhancedServers.push({
+          name: `${s.name} ⚡ Direct`,
+          url: direct.url,
+          type: direct.type as any,
+          headers: direct.headers
+        })
+      } else {
+        enhancedServers.push({
+          name: s.name,
+          url: s.url
+        })
+      }
     }
 
-    return {
-      urls: streamUrls,
-      debug: debugInfo
-    }
+    enhancedServers.sort((a, b) => {
+      const aDirect = a.type === 'hls' || a.type === 'mp4' ? 1 : 0
+      const bDirect = b.type === 'hls' || b.type === 'mp4' ? 1 : 0
+      return bDirect - aDirect
+    })
+
+    return enhancedServers
   }
 }
 
@@ -424,9 +410,9 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.shahiidanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.1',
-  status: 'wip',
-  isFullySupported: false,
+  version: '0.0.2',
+  status: 'supported',
+  isFullySupported: true,
   baseClass: 'Native',
   sources: [{ name: 'Shahiid Anime', id: '67890', baseUrl: 'https://shahiid-anime.net' }]
 }
