@@ -223,6 +223,49 @@ export abstract class AnimeSource implements ISourceAdapter {
           }
         }
       }
+
+      // 7. Ok.ru (Odnoklassniki / VK Video) (.mp4 / .m3u8)
+      if (lower.includes('ok.ru') || lower.includes('odnoklassniki')) {
+        let okUrl = cleanEmbedUrl
+        if (okUrl.startsWith('//')) okUrl = `https:${okUrl}`
+        const html = await this.fetchHtml(okUrl, { headers: refHeader })
+        if (html) {
+          const dataOptions = html.match(/data-options=["']([^"']+)["']/i)
+          if (dataOptions) {
+            try {
+              const unescaped = dataOptions[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+              const parsed = JSON.parse(unescaped)
+              const meta =
+                typeof parsed.flashvars?.metadata === 'string'
+                  ? JSON.parse(parsed.flashvars.metadata)
+                  : parsed.flashvars?.metadata
+              if (meta?.videos && Array.isArray(meta.videos) && meta.videos.length > 0) {
+                const priority = ['ultra', 'quad', 'full', 'hd', 'sd', 'low', 'lowest', 'mobile']
+                const sorted = [...meta.videos].sort((a, b) => {
+                  const aIdx = priority.indexOf(a.name)
+                  const bIdx = priority.indexOf(b.name)
+                  return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx)
+                })
+                const bestVideo = sorted[0]
+                if (bestVideo?.url) {
+                  return {
+                    url: bestVideo.url,
+                    type: 'mp4',
+                    headers: { Referer: 'https://ok.ru/' }
+                  }
+                }
+              }
+              if (meta?.hlsManifestUrl) {
+                return {
+                  url: meta.hlsManifestUrl,
+                  type: 'hls',
+                  headers: { Referer: 'https://ok.ru/' }
+                }
+              }
+            } catch {}
+          }
+        }
+      }
     } catch {}
     return null
   }
