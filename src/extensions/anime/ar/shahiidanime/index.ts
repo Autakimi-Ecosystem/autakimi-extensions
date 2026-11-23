@@ -18,7 +18,7 @@ export class ShahiidAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.shahiidanime',
       'Shahiid Anime',
-      '0.0.3',
+      '0.0.4',
       'https://shahiid-anime.net',
       'ar',
       'ma.autakimi.extension.ar.shahiidanime',
@@ -412,13 +412,41 @@ export class ShahiidAnimeSource extends AnimeSource {
       } catch {}
     }
 
+    // 4. Expand any Megamax / Share4Max aggregator URLs into direct mirror providers
+    const expandedServers: StreamingServer[] = []
+    for (const s of servers) {
+      if (s.url.includes('share4max.com') || s.url.includes('megamax')) {
+        const mirrors = await this._extractShare4MaxMirrors(s.url)
+        if (mirrors.length > 0) {
+          for (const m of mirrors) {
+            if (!seenUrls.has(m.url)) {
+              seenUrls.add(m.url)
+              expandedServers.push(m)
+            }
+          }
+          // Successfully extracted direct mirrors, omit the raw aggregator wrapper
+          continue
+        }
+      }
+      expandedServers.push(s)
+    }
+
+    // Filter out redundant raw aggregator wrappers if other valid streaming servers exist
+    const filteredServers = expandedServers.filter(
+      (s) =>
+        !(
+          (s.url.includes('share4max.com') || s.url.includes('megamax')) &&
+          expandedServers.length > 1
+        )
+    )
+
     // Fallback: episode page URL itself for webview
-    if (servers.length === 0) {
-      servers.push({ name: 'Web View Player', url: episodeUrl })
+    if (filteredServers.length === 0) {
+      filteredServers.push({ name: 'Web View Player', url: episodeUrl })
     }
 
     const enhancedServers: StreamingServer[] = []
-    for (const s of servers) {
+    for (const s of filteredServers) {
       const direct = await this.resolveDirectStream(s.url)
       if (direct) {
         enhancedServers.push({
@@ -443,6 +471,72 @@ export class ShahiidAnimeSource extends AnimeSource {
 
     return enhancedServers
   }
+
+  /**
+   * Extracts mirror video links from Megamax / Share4Max aggregator pages.
+   * Share4Max uses Inertia.js to dynamically serve mirrors (Voe, Dood, Uqload, LuluStream, etc.)
+   * when requested via X-Inertia-Partial-Data: streams.
+   */
+  private async _extractShare4MaxMirrors(share4maxUrl: string): Promise<StreamingServer[]> {
+    try {
+      const hashMatch = share4maxUrl.match(/(?:iframe|e|mirror)\/([a-zA-Z0-9]+)/)
+      if (!hashMatch) return []
+      const hashId = hashMatch[1]
+      const iframeUrl = `https://share4max.com/iframe/${hashId}`
+
+      // 1. Fetch initial HTML to extract current Inertia asset version
+      const html = await this.fetchHtml(iframeUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+        }
+      })
+      if (!html) return []
+      const verMatch = html.match(/"version":"([a-f0-9]+)"/i)
+      const version = verMatch ? verMatch[1] : '81f01992ab5c5bd6d28126839372b362'
+
+      // 2. Fetch Inertia partial streams data
+      const jsonStr = await this.fetchHtml(iframeUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+          'X-Inertia': 'true',
+          'X-Inertia-Partial-Component': 'files/mirror/video',
+          'X-Inertia-Partial-Data': 'streams',
+          'X-Inertia-Version': version,
+          'X-Requested-With': 'XMLHttpRequest',
+          Referer: iframeUrl
+        }
+      })
+      if (!jsonStr) return []
+
+      const data = JSON.parse(jsonStr)
+      const streams = data?.props?.streams?.data || []
+      const mirrors: StreamingServer[] = []
+      const seen = new Set<string>()
+
+      for (const st of streams) {
+        if (Array.isArray(st.mirrors)) {
+          for (const m of st.mirrors) {
+            let link = (m.link || '').trim()
+            if (!link) continue
+            if (link.startsWith('//')) link = `https:${link}`
+            if (link.startsWith('http') && !seen.has(link)) {
+              seen.add(link)
+              const driver = (m.driver || 'Mirror').toUpperCase()
+              mirrors.push({
+                name: `[${driver}]`,
+                url: link
+              })
+            }
+          }
+        }
+      }
+      return mirrors
+    } catch {
+      return []
+    }
+  }
 }
 
 export const config = {
@@ -450,7 +544,7 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.shahiidanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.3',
+  version: '0.0.4',
   status: 'supported',
   isFullySupported: true,
   baseClass: 'Native',
