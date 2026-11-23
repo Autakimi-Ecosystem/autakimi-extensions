@@ -239,6 +239,17 @@ export abstract class AnimeSource implements ISourceAdapter {
                 typeof parsed.flashvars?.metadata === 'string'
                   ? JSON.parse(parsed.flashvars.metadata)
                   : parsed.flashvars?.metadata
+              // 1. Prefer HLS (.m3u8) for smooth chunked buffering, instantaneous seeking, and adaptive bitrate
+              const hlsUrl = meta?.ondemandHls || meta?.hlsManifestUrl
+              if (hlsUrl) {
+                return {
+                  url: hlsUrl,
+                  type: 'hls',
+                  headers: { Referer: 'https://ok.ru/' }
+                }
+              }
+
+              // 2. Fallback to direct MP4 if HLS is unavailable
               if (meta?.videos && Array.isArray(meta.videos) && meta.videos.length > 0) {
                 const priority = ['ultra', 'quad', 'full', 'hd', 'sd', 'low', 'lowest', 'mobile']
                 const sorted = [...meta.videos].sort((a, b) => {
@@ -253,13 +264,6 @@ export abstract class AnimeSource implements ISourceAdapter {
                     type: 'mp4',
                     headers: { Referer: 'https://ok.ru/' }
                   }
-                }
-              }
-              if (meta?.hlsManifestUrl) {
-                return {
-                  url: meta.hlsManifestUrl,
-                  type: 'hls',
-                  headers: { Referer: 'https://ok.ru/' }
                 }
               }
             } catch {}
