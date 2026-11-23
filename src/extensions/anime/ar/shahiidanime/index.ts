@@ -18,7 +18,7 @@ export class ShahiidAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.shahiidanime',
       'Shahiid Anime',
-      '0.0.4',
+      '0.0.5',
       'https://shahiid-anime.net',
       'ar',
       'ma.autakimi.extension.ar.shahiidanime',
@@ -544,7 +544,7 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.shahiidanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.4',
+  version: '0.0.5',
   status: 'supported',
   isFullySupported: true,
   baseClass: 'Native',
