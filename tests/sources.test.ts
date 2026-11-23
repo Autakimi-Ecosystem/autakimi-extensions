@@ -17,6 +17,7 @@ import { MangaDexSource } from '../src/extensions/manga/all/mangadex/index'
 import { ShahiidAnimeSource } from '../src/extensions/anime/ar/shahiidanime/index'
 import { RistoAnimeSource } from '../src/extensions/anime/ar/ristoanime/index'
 import { WitAnimeSource } from '../src/extensions/anime/ar/witanime/index'
+import { OKAnimeSource } from '../src/extensions/anime/ar/okanime/index'
 
 describe('Native Sources Integration Tests', () => {
   it('RistoAnimeSource - fetchPopular should return manga', async () => {
@@ -79,6 +80,24 @@ describe('Native Sources Integration Tests', () => {
     expect(source.lang).toBe('ar')
     expect(source.mediaType).toBe('anime')
   })
+
+  it('OKAnimeSource - should initialize and fetchPopular', async () => {
+    const source = new OKAnimeSource()
+    expect(source.id).toBe('ma.autakimi.extension.ar.okanime')
+    expect(source.baseUrl).toBe('https://ww3.okanime.xyz')
+    expect(source.lang).toBe('ar')
+    expect(source.mediaType).toBe('anime')
+
+    const result = await source.fetchPopular(1)
+    expect(result).toBeDefined()
+    expect(result.manga).toBeInstanceOf(Array)
+    expect(result.manga.length).toBeGreaterThan(0)
+
+    const first = result.manga[0]
+    expect(first.title).toBeDefined()
+    expect(first.url).toBeDefined()
+    expect(first.coverUrl).toBeDefined()
+  }, 15000)
 
   it('MangaDexSource - fetchPopular should return manga', async () => {
     const source = new MangaDexSource()

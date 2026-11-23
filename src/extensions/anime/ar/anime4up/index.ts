@@ -10,7 +10,7 @@ export class Anime4UpSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.anime4up',
       'Anime4Up',
-      '0.0.1',
+      '0.0.2',
       'https://anime4up.quest',
       'ar',
       'ma.autakimi.extension.ar.anime4up',
@@ -343,9 +343,9 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.anime4up',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.1',
-  status: 'wip',
-  isFullySupported: false,
+  version: '0.0.2',
+  status: 'supported',
+  isFullySupported: true,
   baseClass: 'Native',
   sources: [{ name: 'Anime4Up', id: 'anime4up', baseUrl: 'https://anime4up.quest' }]
 }
