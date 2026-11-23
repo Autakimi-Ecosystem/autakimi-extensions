@@ -4,15 +4,32 @@
     "pkg": "ma.autakimi.extension.ar.anime4up",
     "lang": "ar",
     "type": "anime",
-    "version": "0.0.1",
-    "status": "wip",
-    "isFullySupported": false,
+    "version": "0.0.2",
+    "status": "supported",
+    "isFullySupported": true,
     "baseClass": "Native",
     "sources": [
       {
         "name": "Anime4Up",
         "id": "anime4up",
         "baseUrl": "https://anime4up.quest"
+      }
+    ]
+  },
+  {
+    "name": "OKAnime",
+    "pkg": "ma.autakimi.extension.ar.okanime",
+    "lang": "ar",
+    "type": "anime",
+    "version": "0.0.1",
+    "status": "supported",
+    "isFullySupported": true,
+    "baseClass": "Native",
+    "sources": [
+      {
+        "name": "OKAnime",
+        "id": "okanime",
+        "baseUrl": "https://ww3.okanime.xyz"
       }
     ]
   },

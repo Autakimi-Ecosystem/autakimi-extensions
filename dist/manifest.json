@@ -1,5 +1,5 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.7",
   "name": "AutaKimi Official Extensions",
   "templates": "templates.json",
   "plugins": "plugins.json",
