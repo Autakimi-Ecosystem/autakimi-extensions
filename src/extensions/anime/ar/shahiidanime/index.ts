@@ -18,7 +18,7 @@ export class ShahiidAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.shahiidanime',
       'Shahiid Anime',
-      '0.0.2',
+      '0.0.3',
       'https://shahiid-anime.net',
       'ar',
       'ma.autakimi.extension.ar.shahiidanime',
@@ -345,7 +345,47 @@ export class ShahiidAnimeSource extends AnimeSource {
       }
     }
 
-    // 1. Primary iframes in player containers
+    // 1. Resolve server buttons via AJAX GET request (Sendvid, Videa, Okru, Dood, etc.)
+    const buttons: { label: string; post: string; serverId: string; serv: string }[] = []
+    $('.movies-servers a.buttosn, .tabs-ul a.buttosn').each((_, el) => {
+      const post = $(el).attr('data-post')
+      const serverId = $(el).attr('data-server-id')
+      const serv = $(el).attr('data-serv')
+      const label = $(el).text().trim().replace(/\s+/g, ' ') || 'Server'
+      if (post && serverId && serv) {
+        buttons.push({ label, post, serverId, serv })
+      }
+    })
+
+    if (buttons.length > 0) {
+      await Promise.all(
+        buttons.map(async (b) => {
+          try {
+            const params = new URLSearchParams({
+              action: 'codecanal_ajax_request',
+              post: b.post,
+              server_id: b.serverId,
+              serv: b.serv
+            })
+            const ajaxUrl = `${this.baseUrl}/wp-admin/admin-ajax.php?${params.toString()}`
+            const res = await this.fetchHtml(ajaxUrl, {
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                Referer: episodeUrl
+              }
+            })
+            if (res) {
+              const match = res.match(/src=["']([^"']+)["']/i)
+              if (match && match[1]) {
+                addServer(b.label, match[1])
+              }
+            }
+          } catch {}
+        })
+      )
+    }
+
+    // 2. Primary iframes in player containers
     $(
       'div#services-cntn-ajax iframe, .movies-servers iframe, #player iframe, .player iframe, iframe'
     ).each((_, el) => {
@@ -353,7 +393,7 @@ export class ShahiidAnimeSource extends AnimeSource {
       if (src) addServer('Default Player', src)
     })
 
-    // 2. Download page if available
+    // 3. Download page if available
     const downloadLink = $('a[href*="?download="]').first().attr('href')
     if (downloadLink) {
       try {
@@ -410,7 +450,7 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.shahiidanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.2',
+  version: '0.0.3',
   status: 'supported',
   isFullySupported: true,
   baseClass: 'Native',
