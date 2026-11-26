@@ -10,7 +10,7 @@ export class RistoAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.ristoanime',
       'RistoAnime',
-      '0.0.3',
+      '0.0.4',
       'https://ristoanime.cc',
       'ar',
       'ma.autakimi.extension.ar.ristoanime',
@@ -231,30 +231,103 @@ export class RistoAnimeSource extends AnimeSource {
       }
     })
 
+    // Extract linked Seasons (.SeasonsList)
+    const ajaxBase =
+      html.match(/var\s+AjaxtURL\s*=\s*["']([^"']+)["']/)?.[1] ||
+      `${this.baseUrl}/wp-content/themes/TopAnime/Ajaxt/`
+    const postId =
+      html.match(/post_id\s*:\s*['"](\d+)['"]/)?.[1] || html.match(/postid-(\d+)/)?.[1] || ''
+    const ajaxEndpoint = `${ajaxBase.endsWith('/') ? ajaxBase : `${ajaxBase}/`}Single/Episodes.php`
+
+    const seasons: Array<{ id: string; title: string; url: string; isCurrent?: boolean }> = []
+    $('.SeasonsList > ul li, .SeasonsList li').each((_, el) => {
+      const link = $(el).find('a').first()
+      const seasonTitle = link.text().trim()
+      if (!seasonTitle) return
+
+      const dataSeason = link.attr('data-season') || ''
+      const rawHref = (link.attr('href') || '').trim()
+      const isCurrent = $(el).hasClass('active')
+
+      let seasonUrl = ''
+      if (rawHref && !rawHref.startsWith('javascript') && rawHref !== '#') {
+        seasonUrl = rawHref.startsWith('http')
+          ? rawHref
+          : `${this.baseUrl}${rawHref.startsWith('/') ? '' : '/'}${rawHref}`
+      } else if (dataSeason && postId) {
+        seasonUrl = isCurrent
+          ? manga.url || `${ajaxEndpoint}?risto_season=${dataSeason}&risto_post=${postId}`
+          : `${ajaxEndpoint}?risto_season=${dataSeason}&risto_post=${postId}`
+      }
+
+      if (seasonUrl && !seasons.some((s) => s.url === seasonUrl)) {
+        seasons.push({
+          id: dataSeason || seasonUrl,
+          title: seasonTitle,
+          url: seasonUrl,
+          isCurrent
+        })
+      }
+    })
+
     return {
       ...manga,
       title,
       description,
       coverUrl,
       genres,
-      status: status || 'Unknown'
-    }
+      status: status || 'Unknown',
+      ...(seasons.length > 0 ? { seasons } : {})
+    } as Manga
   }
 
   // ─── Episodes ────────────────────────────────────────────────────────────────
 
   async fetchChapters(mangaUrl: string): Promise<Chapter[]> {
-    const html = await this.fetchHtml(mangaUrl)
+    const isAjaxSeason = mangaUrl.includes('risto_season=') && mangaUrl.includes('risto_post=')
+    let html = ''
+
+    if (isAjaxSeason) {
+      try {
+        const parsed = new URL(mangaUrl)
+        const seasonId = parsed.searchParams.get('risto_season') || ''
+        const postId = parsed.searchParams.get('risto_post') || ''
+        const endpoint = `${parsed.origin}${parsed.pathname}`
+        if (seasonId && postId) {
+          html = await this.fetchHtml(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+              'X-Requested-With': 'XMLHttpRequest',
+              Referer: this.baseUrl
+            },
+            body: `season=${encodeURIComponent(seasonId)}&post_id=${encodeURIComponent(postId)}`
+          })
+        }
+      } catch {
+        html = ''
+      }
+    } else {
+      html = await this.fetchHtml(mangaUrl)
+    }
+
     if (!html) return []
 
     const $ = cheerio.load(html)
     const chapters: Chapter[] = []
+    const seenUrls = new Set<string>()
+    const selector = isAjaxSeason
+      ? '.EpisodesList a, a[href]'
+      : '.EpisodesList a, .episodes-list a, .ep-list a, .episodes a'
 
-    $('.EpisodesList a, .episodes-list a, .ep-list a, .episodes a').each((i, el) => {
-      const href = $(el).attr('href') || ''
-      if (!href) return
+    $(selector).each((i, el) => {
+      const href = ($(el).attr('href') || '').trim()
+      if (!href || href.startsWith('javascript') || href === '#') return
 
       const epUrl = href.startsWith('http') ? href : `${this.baseUrl}${href}`
+      if (seenUrls.has(epUrl)) return
+      seenUrls.add(epUrl)
+
       const numStr =
         $(el).find('em, span, b').text().trim() ||
         $(el).text().trim().match(/\d+/)?.[0] ||
@@ -442,7 +515,7 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.ristoanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.3',
+  version: '0.0.4',
   status: 'supported',
   isFullySupported: true,
   baseClass: 'Native',
