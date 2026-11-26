@@ -559,7 +559,7 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.ristoanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.5',
+  version: '0.0.6',
   status: 'supported',
   isFullySupported: true,
   baseClass: 'Native',
