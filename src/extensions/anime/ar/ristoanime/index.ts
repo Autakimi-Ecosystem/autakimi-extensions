@@ -10,7 +10,7 @@ export class RistoAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.ristoanime',
       'RistoAnime',
-      '0.0.4',
+      '0.0.5',
       'https://ristoanime.cc',
       'ar',
       'ma.autakimi.extension.ar.ristoanime',
@@ -141,13 +141,57 @@ export class RistoAnimeSource extends AnimeSource {
   // ─── Series Detail ───────────────────────────────────────────────────────────
 
   async fetchMangaDetails(manga: Manga): Promise<Manga> {
-    const html = await this.fetchHtml(manga.url || '')
+    const rawUrl = manga.url || ''
+    const isAjaxSeason = rawUrl.includes('risto_season=') && rawUrl.includes('risto_post=')
+    let html = ''
+
+    if (isAjaxSeason) {
+      try {
+        const parsed = new URL(rawUrl)
+        const seasonId = parsed.searchParams.get('risto_season') || ''
+        const postId = parsed.searchParams.get('risto_post') || ''
+        const endpoint = `${parsed.origin}${parsed.pathname}`
+        if (seasonId && postId) {
+          const ajaxFrag = await this.fetchHtml(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+              'X-Requested-With': 'XMLHttpRequest',
+              Referer: this.baseUrl
+            },
+            body: `season=${encodeURIComponent(seasonId)}&post_id=${encodeURIComponent(postId)}`
+          })
+          if (ajaxFrag) {
+            const $frag = cheerio.load(ajaxFrag)
+            const firstHref = $frag('a[href]')
+              .toArray()
+              .map((el) => ($frag(el).attr('href') || '').trim())
+              .find((h) => h && !h.startsWith('javascript') && h !== '#')
+            if (firstHref) {
+              const targetPage = firstHref.startsWith('http')
+                ? firstHref
+                : `${this.baseUrl}${firstHref.startsWith('/') ? '' : '/'}${firstHref}`
+              html = await this.fetchHtml(targetPage)
+            }
+          }
+        }
+      } catch {
+        html = ''
+      }
+    } else {
+      html = await this.fetchHtml(rawUrl)
+    }
+
     if (!html) return manga
 
     const $ = cheerio.load(html)
 
+    // Prefer exact season label from active tab when available (clean series + season title)
+    const activeSeasonTitle = $('.SeasonsList li.active a').first().text().trim()
+
     // Try to get specific title container first
     let title =
+      activeSeasonTitle ||
       $('.PostTitle').first().text().trim() ||
       $('.SeriesSide h1').first().text().trim() ||
       $('.anime-title').first().text().trim()
@@ -515,7 +559,7 @@ export const config = {
   pkg: 'ma.autakimi.extension.ar.ristoanime',
   lang: 'ar',
   type: 'anime',
-  version: '0.0.4',
+  version: '0.0.5',
   status: 'supported',
   isFullySupported: true,
   baseClass: 'Native',

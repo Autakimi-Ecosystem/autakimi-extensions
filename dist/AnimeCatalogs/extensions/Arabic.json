@@ -38,7 +38,7 @@
     "pkg": "ma.autakimi.extension.ar.ristoanime",
     "lang": "ar",
     "type": "anime",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "status": "supported",
     "isFullySupported": true,
     "baseClass": "Native",
