@@ -10,7 +10,7 @@ export class RistoAnimeSource extends AnimeSource {
     super(
       'ma.autakimi.extension.ar.ristoanime',
       'RistoAnime',
-      '0.0.5',
+      '0.0.6',
       'https://ristoanime.cc',
       'ar',
       'ma.autakimi.extension.ar.ristoanime',
@@ -142,7 +142,7 @@ export class RistoAnimeSource extends AnimeSource {
 
   async fetchMangaDetails(manga: Manga): Promise<Manga> {
     const rawUrl = manga.url || ''
-    const isAjaxSeason = rawUrl.includes('risto_season=') && rawUrl.includes('risto_post=')
+    const isAjaxSeason = rawUrl.includes('risto_season=')
     let html = ''
 
     if (isAjaxSeason) {
@@ -151,7 +151,7 @@ export class RistoAnimeSource extends AnimeSource {
         const seasonId = parsed.searchParams.get('risto_season') || ''
         const postId = parsed.searchParams.get('risto_post') || ''
         const endpoint = `${parsed.origin}${parsed.pathname}`
-        if (seasonId && postId) {
+        if (seasonId) {
           const ajaxFrag = await this.fetchHtml(endpoint, {
             method: 'POST',
             headers: {
@@ -279,8 +279,6 @@ export class RistoAnimeSource extends AnimeSource {
     const ajaxBase =
       html.match(/var\s+AjaxtURL\s*=\s*["']([^"']+)["']/)?.[1] ||
       `${this.baseUrl}/wp-content/themes/TopAnime/Ajaxt/`
-    const postId =
-      html.match(/post_id\s*:\s*['"](\d+)['"]/)?.[1] || html.match(/postid-(\d+)/)?.[1] || ''
     const ajaxEndpoint = `${ajaxBase.endsWith('/') ? ajaxBase : `${ajaxBase}/`}Single/Episodes.php`
 
     const seasons: Array<{ id: string; title: string; url: string; isCurrent?: boolean }> = []
@@ -298,10 +296,12 @@ export class RistoAnimeSource extends AnimeSource {
         seasonUrl = rawHref.startsWith('http')
           ? rawHref
           : `${this.baseUrl}${rawHref.startsWith('/') ? '' : '/'}${rawHref}`
-      } else if (dataSeason && postId) {
-        seasonUrl = isCurrent
-          ? manga.url || `${ajaxEndpoint}?risto_season=${dataSeason}&risto_post=${postId}`
-          : `${ajaxEndpoint}?risto_season=${dataSeason}&risto_post=${postId}`
+      } else if (dataSeason) {
+        // Keep canonical series URL when already on a non-AJAX series page; otherwise omit volatile risto_post
+        seasonUrl =
+          isCurrent && manga.url && !manga.url.includes('risto_season=')
+            ? manga.url
+            : `${ajaxEndpoint}?risto_season=${dataSeason}`
       }
 
       if (seasonUrl && !seasons.some((s) => s.url === seasonUrl)) {
@@ -328,7 +328,7 @@ export class RistoAnimeSource extends AnimeSource {
   // ─── Episodes ────────────────────────────────────────────────────────────────
 
   async fetchChapters(mangaUrl: string): Promise<Chapter[]> {
-    const isAjaxSeason = mangaUrl.includes('risto_season=') && mangaUrl.includes('risto_post=')
+    const isAjaxSeason = mangaUrl.includes('risto_season=')
     let html = ''
 
     if (isAjaxSeason) {
@@ -337,7 +337,7 @@ export class RistoAnimeSource extends AnimeSource {
         const seasonId = parsed.searchParams.get('risto_season') || ''
         const postId = parsed.searchParams.get('risto_post') || ''
         const endpoint = `${parsed.origin}${parsed.pathname}`
-        if (seasonId && postId) {
+        if (seasonId) {
           html = await this.fetchHtml(endpoint, {
             method: 'POST',
             headers: {
